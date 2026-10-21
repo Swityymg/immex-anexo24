@@ -1,0 +1,5 @@
+- Keep the Anexo 24 workbook as the source of truth for capture data.
+- Recalculate derived values in `ledger.py`; never trust calculated Excel columns.
+- Preserve strict PEPS order by entry date and pedimento tie-breaker.
+- Treat merma tolerance as an internal alert threshold, not a legal limit.
+- Validate changes against the challenge oracles and retain evidence of mismatches.

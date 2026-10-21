@@ -1,0 +1,9 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.streamlit/secrets.toml
+data/anexo24.sqlite3
+*.sqlite3
+data/profiles/
+.DS_Store

@@ -1,0 +1,1340 @@
+Jueves 15 de enero de 2026
+
+DIARIO OFICIAL
+
+SECRETARIA DE HACIENDA Y CREDITO PUBLICO
+ANEXO 24 DE LAS REGLAS GENERALES DE COMERCIO EXTERIOR PARA 2026
+Información mínima que debe contener el sistema automatizado de control de inventarios
+Para los efectos del artículo 59, fracción I de la Ley, en relación con las reglas 4.3.1., 4.8.3., 7.1.1.,
+fracción XIV, 7.1.4., segundo párrafo, apartado D, fracciones III y VII y 7.5.1., fracción XIII, se da a conocer la
+información mínima que debe contener el sistema automatizado de control de inventarios, conforme a lo
+siguiente:
+Contenido
+A.
+
+Información mínima que deberá contener el sistema automatizado de control de inventarios a que se
+refiere la regla 4.3.1.
+
+B.
+
+Información que deberá contener el SECIIT, a que se refiere la regla 7.1.4., segundo párrafo,
+apartado D, fracción VII.
+
+C.
+
+Información mínima que deberá contener el sistema automatizado de control de inventarios para
+empresas que cuenten con el Registro en el Esquema de Certificación de Empresas.
+
+A.
+
+Información mínima que deberá contener el sistema automatizado de control de inventarios a
+que se refiere la regla 4.3.1.:
+El sistema automatizado de control de inventarios conforme al presente apartado, deberá permitir por
+lo menos:
+I.
+
+Dar cabal cumplimiento a las disposiciones establecidas en la Ley, su Reglamento y las RGCE
+en lo relativo al control de inventarios de las mercancías importadas temporalmente.
+
+II.
+
+Contar con un instrumento para la comprobación de los retornos de las mercancías importadas
+temporalmente y control de mercancías pendientes de retorno.
+
+III. Generar reportes que permitan dar cumplimiento a los requerimientos de información
+establecidos en las disposiciones aduaneras y de la propia autoridad.
+El sistema deberá estar formado por lo menos con los siguientes catálogos y módulos:
+I.
+
+II.
+
+Catálogos:
+a)
+
+Datos generales del contribuyente.
+
+b)
+
+Materiales.
+
+c)
+
+Productos.
+
+Módulo de aduanas:
+a)
+
+Módulo de información aduanera de entradas (importaciones temporales).
+
+b)
+
+Módulo de información sobre materiales utilizados.
+
+c)
+
+Módulo de información aduanera de salidas (retornos, destrucciones, donaciones, cambios
+de régimen, etc.).
+
+d)
+
+Módulo de activo fijo.
+
+III. Módulo de reportes:
+a)
+
+Reporte de entrada de mercancías de importación temporal.
+
+b)
+
+Reporte de salida de mercancías de importación temporal.
+
+c)
+
+Reporte de saldos de mercancías de importación temporal.
+
+d)
+
+Reporte de materiales utilizados.
+
+Se describe a continuación la información mínima que deberán contener los catálogos y módulos,
+señalados en el párrafo anterior:
+I.
+
+Catálogos:
+a)
+
+Datos generales del contribuyente:
+Se deberá indicar:
+
+DIARIO OFICIAL
+
+Jueves 15 de enero de 2026
+
+1.
+
+Denominación o razón social.
+
+2.
+
+Clave en el RFC.
+
+3.
+
+Número de Programa IMMEX expedido por la SE.
+
+4.
+
+Domicilio fiscal y, en su caso, el (los) domicilio(s) de la(s) planta(s) industrial(es) y
+bodega(s) (calle, número, código postal, colonia y entidad federativa).
+
+Los datos señalados en los numerales 1 y 2, deberán aparecer en todos y cada uno de los
+reportes.
+b)
+
+Materiales:
+El catálogo de materiales identificará a cada material que se utilice en la producción de las
+mercancías de exportación objeto del programa, el cual deberá indicar:
+
+c)
+
+1.
+
+Fracción arancelaria: la que corresponda a la mercancía de conformidad con la
+TIGIE.
+
+2.
+
+Descripción del material: la que corresponda a la descripción comercial del material.
+
+3.
+
+Unidad de medida de la TIGIE: la unidad de medida que corresponda de conformidad
+con la TIGIE.
+
+Productos:
+El catálogo de productos terminados que identifica a cada mercancía objeto del programa,
+el cual deberá indicar:
+
+II.
+
+1.
+
+Fracción arancelaria: la que corresponda a la mercancía de conformidad con la
+TIGIE.
+
+2.
+
+Descripción del producto: la que corresponda a la descripción comercial del producto.
+
+3.
+
+Unidad de medida de la TIGIE: la unidad de medida que corresponda de conformidad
+con la TIGIE.
+
+Módulo de aduanas:
+a)
+
+Módulo de información aduanera de entradas (importaciones temporales):
+En este módulo se deberá incluir al menos la siguiente información:
+
+b)
+
+1.
+
+Número de pedimento (clave de la aduana/sección de despacho, patente y número
+de documento).
+
+2.
+
+Clave del pedimento.
+
+3.
+
+Fecha de entrada declarada en el pedimento.
+
+Módulo de información sobre materiales utilizados:
+Este módulo deberá contener la información del proceso objeto del programa y deberá
+permitir relacionar las cantidades del producto elaborado con el consumo real de
+componentes utilizados en su producción, para un periodo específico; así como las
+cantidades de mermas y desperdicios resultantes del proceso productivo. Para tales
+efectos se entenderá por consumo real, las mercancías importadas temporalmente a que
+se refiere el artículo 108, tercer párrafo, fracción I de la Ley, que sean utilizadas en el
+proceso de elaboración, transformación, reparación, manufactura, ensamble o
+remanufactura, de los bienes objeto de un Programa IMMEX, determinadas por un periodo
+específico conforme a los sistemas de control que cada empresa tenga establecido.
+Lo anterior podrá determinarse en términos de la unidad de medida de la TIGIE o la unidad
+de medida comercial declarada en el pedimento.
+Para las operaciones de desensamble, los datos relativos a la importación temporal de la
+mercancía objeto del desensamble y de las mercancías obtenidas en el proceso de
+desensamble, además de los mencionados en el inciso a) de la presente fracción son los
+siguientes:
+1.
+
+Número o clave de identificación: indicar el número o clave interna que la empresa
+asigne a la mercancía que resulte del proceso de desensamble y la identifique con el
+pedimento de importación temporal que corresponda a la mercancía objeto del
+desensamble.
+
+Jueves 15 de enero de 2026
+
+DIARIO OFICIAL
+
+2.
+
+Descripción: proporcionar la descripción comercial de la mercancía que resulte del
+proceso de desensamble, identificada con un número o clave, conforme al numeral
+anterior.
+
+3.
+
+Unidad de medida: la unidad de comercialización que le corresponda a la mercancía
+descrita en el numeral anterior.
+
+4.
+
+Cantidad de mercancía: la que corresponda conforme a la unidad de medida
+señalada en el numeral anterior.
+
+Las partes recuperadas del proceso de desensamble, se registrarán conforme a lo
+señalado en el párrafo anterior y podrán retornarse o ser destinadas a procesos
+productivos o de reparación, como insumos, las demás partes se considerarán como
+desperdicio.
+c)
+
+Módulo de información aduanera de salidas (retornos, donaciones, destrucciones,
+cambios de régimen, etc.):
+Este módulo deberá incluir al menos la siguiente información:
+1.
+
+Número de pedimento (clave de aduana/sección de despacho, patente y número de
+documento).
+
+2.
+
+Fecha del pedimento.
+
+3.
+
+Clave del pedimento.
+
+En este módulo se deberá descargar (descontar) de manera automática, la cantidad de
+cada mercancía determinada o calculada conforme al inciso b) de la presente fracción,
+utilizando para tales efectos el método de control de inventarios PEPS, descargando
+dichas mercancías del pedimento que ampara la importación temporal más antigua que
+contenga la mercancía a descargar, considerando lo siguiente:
+1.
+
+Si la cantidad total de cada mercancía determinada, es menor que el saldo de dicha
+mercancía contenido en el pedimento que ampara la importación temporal, se
+descargará la cantidad total de la mercancía.
+
+2.
+
+Si la cantidad total de cada mercancía determinada, es mayor que el saldo de dicha
+mercancía contenido en el pedimento que ampara la importación temporal, se
+descargará el saldo de la mercancía contenido en ese pedimento y la diferencia se
+descargará del siguiente pedimento que ampare la importación temporal que
+corresponda en orden cronológico.
+
+Así mismo, deberá efectuar el descargo de los desperdicios al momento de su donación,
+destrucción, transferencia, cambio de régimen o retorno, utilizando para tales efectos el
+método de control de inventarios PEPS, descargando dichas mercancías del pedimento
+que ampara la importación temporal más antigua que contenga la mercancía a descargar,
+utilizando el mismo procedimiento de descargos, señalado en el párrafo anterior.
+Tratándose de procesos de reparación, el consumo real por mes deberá descargarse
+utilizando el método de control de inventarios PEPS, para identificar los pedimentos que
+amparen la importación temporal.
+Las empresas certificadas que cuenten con la autorización a que se refiere la regla 7.1.4.,
+que fabriquen bienes del sector eléctrico, electrónico, de autopartes, automotriz o
+aeronáutico, para efectos de las descargas conforme a los párrafos anteriores, podrán
+optar por descargar (descontar) de manera automática, el valor por fracción arancelaria
+que corresponda a la mercancía determinada o calculada conforme al inciso b) de la
+presente fracción, utilizando para tales efectos el método de PEPS, descargando dicho
+valor del pedimento de importación temporal más antiguo que contenga valores pendientes
+de descargo de la fracción arancelaria de que se trate.
+Las empresas certificadas de la industria de autopartes que reciban las constancias de
+transferencia de mercancías de las empresas de la industria automotriz terminal o
+manufacturera de vehículos de autotransporte en los términos de las reglas 4.3.13., 4.3.17.
+y demás relativas de las RGCE, que opten por aplicar lo previsto en la regla 7.3.1., fracción
+V, registrarán el número y fecha del comprobante fiscal que expidan en términos de la
+regla 4.3.11., a quien le enajenaron las partes y componentes o insumos.
+d)
+
+Módulo de Activo fijo:
+
+DIARIO OFICIAL
+
+Jueves 15 de enero de 2026
+
+A través de este módulo se deberá indicar la información aduanera de las importaciones,
+exportaciones, retornos, transferencias, donaciones, destrucciones y cambios de régimen
+de los activos fijos, según corresponda y deberá incluir al menos la siguiente información:
+1.
+
+Descripción de la mercancía: proporcionar una descripción de la mercancía que
+incluya la marca y modelo, en el caso de maquinaria y equipo. Tratándose de
+refacciones, herramientas, instrumentos y moldes, no será necesario anotar dichos
+datos.
+
+2.
+
+Número de pedimento (clave de aduana/sección de despacho, patente y número de
+documento).
+
+3.
+
+Fecha del pedimento.
+
+4.
+
+Clave del pedimento.
+
+III. Módulo de reportes:
+Este módulo deberá permitir la emisión de los reportes que comprueben el cumplimiento de las
+obligaciones en materia aduanera.
+Los reportes mínimos que en este módulo se deberán emitir son:
+
+B.
+
+a)
+
+Reporte de entrada de mercancías de importación temporal. El cual deberá mostrar la
+información a que se refiere el tercer párrafo, fracción II, inciso a) del presente apartado.
+
+b)
+
+Reporte de salida de mercancías de importación temporal. El cual deberá mostrar la
+información a que se refiere el tercer párrafo, fracción II, inciso c) del presente apartado.
+
+c)
+
+Reporte de saldos de mercancías de importación temporal. El cual deberá contener los
+saldos por fracción arancelaria del material importado temporalmente.
+
+d)
+
+Reporte de materiales utilizados. El cual deberá permitir conocer la cantidad de
+materiales utilizados en la producción por periodo específico.
+
+Información que deberá contener el SECIIT, a que se refiere la regla 7.1.4., segundo párrafo,
+apartado D, fracción VII:
+El SECIIT deberá recibir de manera electrónica, en un plazo que no exceda las 24 horas, la
+información que se indica en el presente apartado, que de manera obligatoria deberá obtenerse
+electrónicamente del sistema corporativo y la información restante que deberá recibirse a más tardar
+al momento del pago del pedimento correspondiente. Asimismo, se deberá permitir el acceso en
+línea a la autoridad aduanera, asegurando el cumplimiento de los siguientes objetivos:
+I.
+
+Dar cabal cumplimiento a las disposiciones establecidas en la Ley, su Reglamento y las RGCE,
+en lo relativo al control de inventarios de las mercancías importadas temporalmente.
+
+II.
+
+Contar con un instrumento para la comprobación de los retornos de las mercancías importadas
+temporalmente y control de mercancías pendientes de retorno.
+
+III. Generar reportes que permitan dar cumplimiento a los requerimientos de información
+establecidos en las disposiciones aduaneras y de la propia autoridad.
+El sistema deberá estar formado por lo menos con los siguientes catálogos y módulos:
+I.
+
+II.
+
+Catálogos:
+a)
+
+Datos generales del contribuyente.
+
+b)
+
+Materiales.
+
+c)
+
+Productos.
+
+d)
+
+Proveedores.
+
+e)
+
+Clientes.
+
+f)
+
+Submanufactura o submaquila.
+
+g)
+
+Agentes aduanales, agencias aduanales y/o apoderados aduanales.
+
+h)
+
+Activo fijo.
+
+Módulo de interfases:
+a)
+
+Módulo de interfase de entradas (importaciones temporales).
+
+Jueves 15 de enero de 2026
+
+DIARIO OFICIAL
+
+b)
+
+Módulo de interfase de salidas (retornos, destrucciones, donaciones, cambios de régimen,
+etc.).
+
+c)
+
+Módulo de interfase de movimientos de manufactura y ajustes.
+
+III. Módulo de aduanas:
+a)
+
+Módulo de información aduanera de entradas (importaciones temporales).
+
+b)
+
+Módulo de información aduanera de salidas (retornos, destrucciones, donaciones, cambios
+de régimen, etc.).
+
+c)
+
+Módulo de activo fijo.
+
+IV. Módulo de procesos:
+
+V.
+
+a)
+
+Módulo de proceso de entradas.
+
+b)
+
+Módulo de proceso de salidas.
+
+c)
+
+Módulo de proceso de movimientos y ajustes de manufactura.
+
+d)
+
+Módulo de proceso de descargos.
+
+Módulo de reportes:
+a)
+
+Reporte de entrada de mercancía de importación temporal.
+
+b)
+
+Reporte de salida de mercancía de importación temporal.
+
+c)
+
+Reporte de saldos de mercancía de importación temporal.
+
+d)
+
+Reporte de descargos de materiales.
+
+e)
+
+Reporte de ajustes.
+
+Se describe a continuación la información mínima que deberán contener los catálogos y módulos
+señalados en el párrafo anterior:
+I.
+
+Catálogos:
+a)
+
+Datos generales del contribuyente:
+Se deberá indicar:
+1.
+
+Denominación o razón social.
+
+2.
+
+Clave en el RFC.
+
+3.
+
+Número de Programa IMMEX expedido por la SE.
+
+4.
+
+Domicilio fiscal y en su caso el (los) domicilio (s) de la (s) planta (s) industrial (es) y
+bodega (s) (calle, número, código postal, colonia y entidad federativa).
+
+Los datos señalados en los numerales 1 y 2 del presente inciso, deberán aparecer en
+todos y cada uno de los reportes del presente Anexo.
+b)
+
+Materiales:
+El catálogo de materiales identificará cada material que se utilice en la producción de las
+mercancías de exportación registradas en el sistema corporativo, el cual deberá indicar:
+1.
+
+Número de parte o clave de identificación: indicar el número de parte o clave de
+identificación interna que la empresa asigne al material.
+
+2.
+
+Descripción del material: la que corresponda a la descripción comercial del material.
+
+3.
+
+Fracción arancelaria: la que corresponda a la mercancía de conformidad con la
+TIGIE.
+
+4.
+
+Unidad de medida de comercialización: la unidad de medida de comercialización
+contenida en el sistema de manufactura.
+
+5.
+
+Unidad de medida de la TIGIE: la unidad de medida que corresponda de conformidad
+con la TIGIE.
+
+6.
+
+Tipo de material: identificar para cada material que se utiliza en la producción de las
+mercancías de exportación, si corresponde a:
+i.
+
+Material directo que incluye materias primas, partes y componentes.
+
+DIARIO OFICIAL
+ii.
+
+Jueves 15 de enero de 2026
+
+Material indirecto que incluye los materiales consumibles en el proceso
+productivo y registrados en el control de inventarios corporativo.
+
+Los datos señalados en los numerales 1 y 4 del presente inciso, deberán obtenerse de
+manera electrónica del sistema corporativo, por lo que dentro del SECIIT no podrán ser
+modificados.
+c)
+
+Productos:
+El catálogo de productos terminados que identifica a cada mercancía registrada en el
+sistema corporativo, el cual deberá indicar:
+1.
+
+Número de parte o clave de identificación: indicar el número de parte o clave de
+identificación interna que la empresa asigne al producto e identifique al mismo para
+efectos de este Anexo.
+
+2.
+
+Descripción del producto: la que corresponda a la descripción comercial del producto.
+
+3.
+
+Fracción arancelaria: la que corresponda a la mercancía de conformidad con la
+TIGIE.
+
+4.
+
+Unidad de medida de comercialización: la unidad de medida de comercialización
+contenida en el sistema de manufactura.
+
+5.
+
+Unidad de medida de la TIGIE: la unidad de medida que corresponda de conformidad
+con la TIGIE.
+
+Los datos señalados en los numerales 1 y 4 del presente inciso, deberán obtenerse de
+manera electrónica del sistema corporativo, por lo que dentro del SECIIT no podrán ser
+modificados.
+d)
+
+Proveedores:
+El catálogo deberá contener los proveedores relacionados con el suministro de mercancías
+y se deberán indicar al menos los siguientes datos:
+1.
+
+Número o clave de identificación asignado por la empresa.
+
+2.
+
+Nombre, denominación o razón social.
+
+3.
+
+Si es nacional o extranjero.
+
+4.
+
+Si es nacional, indicar el número de registro o autorización que corresponda a:
+i.
+
+Programa IMMEX.
+
+ii.
+
+Recinto Fiscalizado Estratégico.
+
+5.
+
+En el caso de extranjeros, la clave de identificación fiscal, en el caso de nacionales, la
+clave en el RFC o en su caso, la CURP.
+
+6.
+
+Domicilio fiscal (calle, número, código postal, colonia, entidad federativa y país).
+
+Los datos señalados en los numerales 1 y 2 del presente inciso, deberán obtenerse de
+manera electrónica del sistema corporativo, por lo que dentro del SECIIT no podrán ser
+modificados. Los registros inactivos en el catálogo de proveedores del SECIIT deben
+permanecer en dicho catálogo por cinco años a partir de la fecha de baja.
+e)
+
+Clientes:
+El catálogo deberá contener al menos los siguientes datos de los clientes:
+1.
+
+Número o clave de identificación asignado por la empresa.
+
+2.
+
+Nombre, denominación o razón social.
+
+3.
+
+En el caso de extranjeros, la clave de identificación fiscal, en el caso de nacionales, la
+clave en el RFC o, en su caso, la CURP.
+
+4.
+
+Si es nacional, indicar el número de registro o autorización que corresponda a:
+i.
+
+Programa IMMEX.
+
+ii.
+
+ECEX.
+
+iii.
+
+Empresa de la industria automotriz terminal o manufacturera de vehículos.
+
+iv.
+
+Recinto Fiscalizado Estratégico.
+
+Jueves 15 de enero de 2026
+5.
+
+DIARIO OFICIAL
+
+Domicilio fiscal (calle, número, código postal, colonia, entidad federativa y país).
+
+Los datos señalados en los numerales 1 y 2 del presente inciso, deberán obtenerse de
+manera electrónica del sistema corporativo, por lo que dentro del SECIIT no podrán ser
+modificados. Los registros inactivos en el catálogo de clientes del SECIIT deben
+permanecer en dicho catálogo por cinco años a partir de la fecha de baja.
+f)
+
+Submanufactura o submaquila:
+Se deberán indicar los datos de las personas físicas o morales registradas, para efectuar
+procesos industriales complementarios:
+1.
+
+Número o clave de identificación asignado por la empresa.
+
+2.
+
+Nombre, denominación o razón social.
+
+3.
+
+Número y fecha de autorización de la SE.
+
+4.
+
+Domicilio de donde se llevará a cabo el servicio de la submanufactura o submaquila.
+
+Los registros inactivos en el catálogo de submanufactura o submaquila del SECIIT deben
+permanecer en dicho catálogo por cinco años a partir de la fecha de baja.
+g)
+
+Agentes y/o apoderados aduanales, en su caso, agencias aduanales:
+Se deberá indicar:
+1.
+
+Número de patente de agente aduanal, número de autorización de agencia aduanal o
+autorización de apoderado aduanal.
+
+2.
+
+Nombre del agente aduanal, agencia aduanal o apoderado aduanal.
+
+3.
+
+Clave en el RFC y CURP.
+
+4.
+
+En el caso de agentes aduanales, agencias aduanales, nombre, denominación o
+razón social y domicilio fiscal (calle, número, código postal, colonia y entidad
+federativa).
+
+Los registros inactivos en el catálogo de agentes o apoderados aduanales del SECIIT
+deben permanecer en dicho catálogo por cinco años a partir de la fecha de baja.
+h)
+
+Activo fijo:
+Este catálogo identifica a cada bien de activo fijo importado temporalmente, conforme a lo
+establecido en el artículo 108, tercer párrafo, fracción III de la Ley y se deberá indicar al
+menos lo siguiente:
+1.
+
+Orden de compra: número de la orden de compra que corresponde a la mercancía.
+
+2.
+
+Descripción de la mercancía: la descripción deberá permitir relacionarlo con la
+descripción de la mercancía contenida en la factura, así como con la descripción que
+corresponda de conformidad con la TIGIE.
+
+3.
+
+Marca, modelo o número de serie: indicar el dato que corresponda, conforme a lo
+establecido en el artículo 36-A, fracción I, segundo párrafo de la Ley.
+
+4.
+
+Fracción arancelaria: la que corresponda a la mercancía de conformidad con la
+TIGIE.
+
+El dato señalado en el numeral 1 del presente inciso, deberá obtenerse de manera
+electrónica del sistema corporativo, por lo que dentro del SECIIT no podrá ser modificado.
+II.
+
+Módulo de interfases:
+a)
+
+Módulo de interfase de entradas (importaciones temporales):
+A través de este módulo se deberá recibir electrónicamente en el SECIIT la entrada de
+materiales registrada en el sistema corporativo de la empresa y deberá incluir al menos la
+siguiente información:
+1.
+
+Número de parte.
+
+2.
+
+Cantidad.
+
+3.
+
+Unidad de medida de comercialización.
+
+4.
+
+Monto en dólares.
+
+5.
+
+Fecha de recibo de la mercancía.
+
+6.
+
+Número de identificación del proveedor.
+
+7.
+
+Número de factura comercial o control del recibo.
+
+DIARIO OFICIAL
+
+Jueves 15 de enero de 2026
+
+8.
+
+Orden de compra.
+
+9.
+
+Identificador del sistema corporativo que generó la entrada.
+
+Los datos señalados en el presente inciso deberán obtenerse de manera electrónica del
+sistema corporativo, por lo que dentro del SECIIT no podrán ser modificados, excepto el
+monto en dólares cuando se trate de operaciones virtuales.
+b)
+
+Módulo de interfase de salidas (retornos, donaciones, destrucciones, cambios de
+régimen, etc.):
+A través de este módulo se deberá recibir electrónicamente en el SECIIT la salida de
+materiales y productos registrada en el sistema corporativo de la empresa y deberá incluir
+al menos la siguiente información:
+1.
+
+Número de parte.
+
+2.
+
+Cantidad.
+
+3.
+
+Unidad de medida de comercialización.
+
+4.
+
+Monto en dólares.
+
+5.
+
+Fecha de transacción de la baja del sistema corporativo.
+
+6.
+
+Número de identificación del cliente.
+
+7.
+
+Número de factura comercial o control del embarque.
+
+8.
+
+Orden de venta/cliente.
+
+9.
+
+Identificador del sistema corporativo que generó la salida.
+
+Los datos señalados en el presente inciso deberán obtenerse de manera electrónica del
+sistema corporativo, por lo que dentro del SECIIT no podrán ser modificados, excepto el
+monto en dólares cuando se trate de operaciones virtuales.
+c)
+
+Módulo de interfase de movimientos de manufactura y ajustes:
+A través de este módulo se deberán recibir electrónicamente en el SECIIT las entradas,
+salidas, ajustes e inventarios registrados en el sistema corporativo de la empresa y deberá
+incluir al menos la siguiente información:
+1.
+
+2.
+
+Movimientos de manufactura:
+i.
+
+Consolidado de movimientos de las transacciones del sistema corporativo.
+
+ii.
+
+Consumo real: las mercancías importadas temporalmente a que se refiere el
+artículo 108, tercer párrafo, fracción I de la Ley, que sean utilizadas en el
+proceso de elaboración, transformación, reparación, manufactura, ensamble o
+remanufactura, de los bienes objeto de un Programa IMMEX, determinadas por
+un periodo específico conforme a los sistemas de control que cada empresa
+tenga establecido.
+
+Ajustes:
+i.
+
+Faltantes y sobrantes.
+
+ii.
+
+Mermas.
+
+Para las operaciones de desensamble, a través de este módulo también se deberán recibir
+electrónicamente en el SECIIT los datos de las mercancías realmente obtenidas en el
+proceso de desensamble y registrados en el sistema corporativo de la empresa y deberá
+incluir al menos la siguiente información:
+1.
+
+Número o clave de identificación: indicar el número o clave interna que la empresa
+asigne a la mercancía que resulte del proceso de desensamble.
+
+2.
+
+Descripción: proporcionar la descripción comercial de la mercancía que resulte del
+proceso de desensamble.
+
+3.
+
+Unidad de medida: la unidad de comercialización que le corresponda a la mercancía
+descrita en el numeral anterior.
+
+4.
+
+Cantidad de mercancía: la que corresponda conforme a la unidad de medida
+señalada en el numeral anterior.
+
+Jueves 15 de enero de 2026
+
+DIARIO OFICIAL
+
+5.
+
+Valor unitario en dólares.
+
+6.
+
+Monto total en dólares.
+
+7.
+
+Fecha de recuperación de la mercancía.
+
+8.
+
+Identificador del sistema corporativo.
+
+Las mercancías para futura recuperación derivadas de procesos iniciales de desensamble,
+podrán ser registradas y cuantificadas conforme al párrafo anterior y ser almacenadas para
+ser sometidos a futuros procesos de desensamble con el fin de obtener partes
+recuperadas.
+Las partes recuperadas de los procesos de desensamble, serán registradas en el catálogo
+de materiales del SECIIT conforme a lo señalado en el segundo párrafo de este apartado y
+podrán retornarse o destinarse como insumos a procesos productivos o de reparación.
+El remanente de los procesos de desensamble del que ya no es posible recuperación de
+partes, se considerará desperdicio.
+III. Módulo de aduanas:
+a)
+
+Módulo de información aduanera de entradas (importaciones temporales):
+A través de este módulo se deberá recibir electrónicamente en el SECIIT la información
+aduanera de las importaciones temporales transferidas del módulo de elaboración de
+pedimentos y deberá incluir al menos la siguiente información:
+1.
+
+Número de pedimento (clave de aduana/sección de despacho, patente y número de
+documento).
+
+2.
+
+Clave del pedimento.
+
+3.
+
+Fecha de entrada declarada en el pedimento.
+
+4.
+
+País de origen de la mercancía.
+
+5.
+
+Tasa del impuesto de importación aplicable a la mercancía, indicando el tipo de tasa
+que corresponda:
+i.
+
+Tasa general de la TIGIE.
+
+ii.
+
+Tasa preferencial conforme algún tratado de libre comercio o acuerdo comercial
+suscrito por México, indicando el tratado o acuerdo respectivo.
+
+iii.
+
+Tasa prevista en los PROSEC.
+
+iv.
+
+Tasa aplicable conforme a la Regla 8ª.
+
+6.
+
+Factura comercial.
+
+7.
+
+Tratándose de pedimentos consolidados en los términos de la regla 7.3.3., fracción
+IX, inciso b), por cada remesa se deberán registrar los siguientes datos:
+i.
+
+Los correspondientes al formato B12. “Aviso electrónico de importación y de
+exportación”, contenido en el Anexo 1.
+
+ii.
+
+La fecha de cruce señalada en el formato B12. “Aviso electrónico de
+importación y de exportación”, contenido en el Anexo 1.
+
+Este módulo no deberá permitir la modificación de la información mínima requerida, que se
+obtiene del sistema corporativo conforme al tercer párrafo, fracción II, inciso a) del presente
+apartado.
+Los datos a que se refieren los numerales 1, 2, 3 y 7 del presente inciso, deberán recibirse
+electrónicamente en el SECIIT dentro de las 24 horas siguientes a que se genere dicha
+información.
+b)
+
+Módulo de información aduanera de salidas (retornos, donaciones, destrucciones,
+cambios de régimen, etc.):
+A través de este módulo se deberá recibir electrónicamente en el SECIIT la información
+aduanera de los retornos, transferencias, donaciones, destrucciones y cambios de régimen
+de los materiales o productos según corresponda, transferida del módulo de elaboración de
+pedimentos y deberá incluir al menos la siguiente información:
+
+DIARIO OFICIAL
+
+c)
+
+Jueves 15 de enero de 2026
+
+1.
+
+Número de pedimento (clave de aduana/sección de despacho, patente y número de
+documento).
+
+2.
+
+Fecha del pedimento.
+
+3.
+
+Clave del pedimento.
+
+4.
+
+País de destino de la mercancía.
+
+5.
+
+Datos de la mercancía conforme al catálogo de materiales a que se refiere el tercer
+párrafo, fracción I, inciso b) del presente apartado, en el caso de materiales e inciso
+c) en el caso de productos, según se trate de exportación, retorno, transferencia,
+donación, destrucción y/o cambio de régimen de los materiales o productos.
+
+6.
+
+Guía aérea o conocimiento de embarque cuando aplique.
+
+7.
+
+Factura comercial, cuando aplique.
+
+8.
+
+Tratándose de pedimentos consolidados en los términos de la regla 7.3.3., fracción
+IX, inciso b), por cada remesa se deberán registrar los siguientes datos:
+i.
+
+Los correspondientes al formato B12. “Aviso electrónico de importación y de
+exportación”, contenido en el Anexo 1.
+
+ii.
+
+La fecha de cruce señalada en el formato B12. “Aviso electrónico de
+importación y de exportación”, contenido en el Anexo 1.
+
+Módulo de activo fijo:
+A través de este módulo se deberá recibir electrónicamente en el SECIIT la información
+aduanera de las importaciones, exportaciones, retornos, transferencias, donaciones,
+destrucciones y cambios de régimen de los activos fijos, según corresponda, transferida del
+módulo de elaboración de pedimentos y deberá incluir al menos la siguiente información:
+1.
+
+Número de pedimento (clave de aduana/sección de despacho, patente y número de
+documento).
+
+2.
+
+Fecha del pedimento.
+
+3.
+
+Clave del pedimento.
+
+4.
+
+País de origen de la mercancía.
+
+5.
+
+Datos de la mercancía conforme al catálogo de activos a que se refiere el tercer
+párrafo, fracción I, inciso h) del presente apartado.
+
+6.
+
+Tasa del impuesto de importación aplicable a la mercancía, indicando el tipo de tasa
+que corresponda:
+i.
+
+Tasa general de la TIGIE.
+
+ii.
+
+Tasa preferencial conforme algún tratado de libre comercio o acuerdo comercial
+suscrito por México, indicando el tratado o acuerdo respectivo.
+
+iii.
+
+Tasa prevista en los PROSEC.
+
+iv.
+
+Tasa aplicable conforme a la Regla 8ª.
+
+7.
+
+Guía aérea o conocimiento de embarque.
+
+8.
+
+Factura comercial o CDFI.
+
+9.
+
+Tratándose de pedimentos consolidados en los términos de la regla 7.3.3., fracción
+IX, inciso b), por cada remesa se deberán registrar los siguientes datos:
+i.
+
+Los correspondientes al formato B12. “Aviso electrónico de importación y de
+exportación”, contenido en el Anexo 1.
+
+ii.
+
+La fecha de cruce señalada en el formato B12. “Aviso electrónico de
+importación y de exportación”, contenido en el Anexo 1, en el caso de
+importaciones.
+
+En el caso de rectificaciones a los pedimentos que amparen las operaciones de este
+módulo, se deberán de indicar los datos del pedimento que ampare la rectificación.
+
+Jueves 15 de enero de 2026
+
+DIARIO OFICIAL
+
+IV. Módulo de procesos:
+Este módulo permitirá efectuar los procesos necesarios que permitan integrar la información de
+los módulos de interfaces, con la información del módulo de aduanas. Así mismo, a través del
+proceso de descargos, permitirá conciliar el inventario del sistema corporativo reflejado en el
+módulo de movimientos y ajustes de manufactura, contra el inventario contenido en el sistema
+SECIIT, asegurando de esta forma la integridad de la información.
+Procesos que debe efectuar el sistema:
+a)
+
+Módulo de proceso de entradas: las entradas recibidas del sistema corporativo deberán
+ser registradas diariamente a través del módulo de interfaces y deberá complementarse
+con la información aduanera del módulo de aduanas.
+
+b)
+
+Módulo de proceso de salidas: las salidas recibidas del sistema corporativo deberán ser
+registradas diariamente a través del módulo de interfaces y deberá complementarse con la
+información aduanera del módulo de aduanas.
+
+c)
+
+Módulo de proceso de movimientos y ajustes de manufactura:
+
+d)
+
+1.
+
+Este módulo recibirá del sistema corporativo las cantidades del inventario inicial y
+final para un periodo específico de cada material de entrada, de salida, o ajuste. Las
+cantidades deberán determinarse en la unidad de medida conforme al tercer párrafo,
+fracción I, inciso b), numeral 4. del presente apartado.
+
+2.
+
+Este módulo recibirá del sistema corporativo las cantidades de cada producto
+elaborado y de cada material utilizado en la producción de los mismos para un
+periodo específico, que permitan relacionar cada producto que se indique en
+inventarios, con el pedimento respectivo que ampare el retorno, transferencia o
+cambio de régimen. Las cantidades deberán determinarse en la unidad de medida
+conforme al tercer párrafo, fracción I, inciso b), numeral 4 del presente apartado.
+
+3.
+
+Este módulo conciliará la información contenida en el módulo de movimientos de
+manufactura y ajustes señalado en el tercer párrafo, fracción II, inciso c) del presente
+apartado, generada por el sistema corporativo para un periodo específico, y hará la
+comparación con la información aduanera registrada en el SECIIT.
+
+Módulo de proceso de descargos:
+El sistema deberá efectuar los procesos necesarios que permitan determinar la cantidad de
+mercancías incorporadas en los productos de exportación e identificar los pedimentos que
+amparen la importación temporal, que deberán ser afectados con los retornos,
+transferencias, cambios de régimen y lo que corresponda a mermas y desperdicios:
+1.
+
+Efectuar el descargo (descontar) de la cantidad de cada mercancía determinada
+conforme al tercer párrafo, fracción II, inciso c), numeral 1, romanito ii del presente
+apartado, de manera automática, utilizando para tales efectos el método de control de
+inventarios PEPS, descargando dichas mercancías del pedimento que ampara la
+importación temporal más antigua que contenga la mercancía a descargar a nivel
+número de parte, considerando lo siguiente:
+Tratándose de materiales recuperados de los procesos de desensamble, el consumo
+real por periodo deberá descargarse por número de parte recuperada para procesos
+futuros de mayor desensamble, del pedimento que ampara la importación temporal
+más antigua que contenga la mercancía de donde se obtuvieron las partes
+recuperadas:
+i.
+
+Si la cantidad total de cada mercancía determinada conforme al tercer párrafo,
+fracción II, inciso c), numeral 1, romanito ii del presente apartado, es menor que
+el saldo de dicha mercancía contenido en el pedimento que ampara la
+importación temporal, se descargará la cantidad total de la mercancía.
+
+ii.
+
+Si la cantidad total de cada mercancía determinada conforme al tercer párrafo,
+fracción II, inciso c), numeral 1, romanito ii del presente apartado, es mayor que
+el saldo de dicha mercancía contenido en el pedimento que ampara la
+importación temporal, se descargará el saldo de la mercancía contenido en ese
+
+DIARIO OFICIAL
+
+Jueves 15 de enero de 2026
+
+pedimento y la diferencia se descargará del siguiente pedimento que ampare la
+importación temporal que corresponda en orden cronológico.
+2.
+
+Efectuar el descargo de los desperdicios al momento de su donación, destrucción,
+transferencia, cambio de régimen o retorno, utilizando para tales efectos el método de
+control de inventarios PEPS, descargando dichas mercancías del pedimento que
+ampara la importación temporal más antigua que contenga la mercancía a descargar
+a nivel número de parte, utilizando el mismo procedimiento de descargos, señalado
+en el numeral anterior.
+
+3.
+
+Efectuar el descargo de los bienes de activo fijo importados temporalmente, al
+momento de su retorno, transferencia, cambio de régimen o donación.
+
+4.
+
+Las empresas podrán optar por efectuar el descargo por valor, descontando de
+manera automática, el valor que corresponda a la mercancía determinada o calculada
+conforme a los párrafos anteriores, descargando dicho valor del pedimento de
+importación temporal más antiguo que contenga valores pendientes de descargo a
+nivel fracción arancelaria o a nivel pedimento.
+
+El sistema deberá efectuar los procesos necesarios que permitan relacionar el valor total
+de las mercancías incorporadas en los productos de exportación con los pedimentos de
+importación temporal que deberán ser afectados, por lo que en la información aduanera de
+entradas, salidas y ajustes se deberá indicar el valor correspondiente.
+Cuando las empresas opten por efectuar los descargos a nivel pedimento, el saldo en
+pedimentos de importación se interpretará que corresponde a las mercancías con tasa
+arancelaria mayor, contenida en el pedimento.
+V.
+
+Módulo de reportes:
+Este módulo deberá permitir la emisión de los reportes que comprueben el cumplimiento de las
+obligaciones en materia aduanera, así como la integridad de la información suministrada por el
+sistema corporativo al SECIIT.
+Los reportes mínimos que este módulo deberá emitir son:
+a)
+
+Reporte de entrada de mercancías de importación temporal.
+
+b)
+
+Reporte de salida de mercancías de importación temporal.
+
+c)
+
+Reporte de saldos de mercancías de importación temporal.
+
+d)
+
+Reporte de descargos de materiales.
+
+e)
+
+Reporte de ajustes.
+
+En caso de que la empresa realice sus descargos por valor, conforme a la opción prevista en el
+tercer párrafo, fracción IV, inciso d), numeral 4 del presente apartado, los reportes a que se refiere
+este, se emitirán por valor.
+C.
+
+Información mínima que deberá contener el sistema automatizado de control de inventarios
+para empresas que cuenten con el Registro en el Esquema de Certificación de Empresas.
+El sistema automatizado de control de inventarios conforme al presente apartado, deberá
+actualizarse en un plazo que no exceda de 48 horas contadas a partir de que concluyan los actos y
+formalidades relacionados con el despacho aduanero en términos de la Ley. Asimismo, se deberá
+permitir el acceso en línea a la autoridad aduanera, asegurando el cumplimiento de los siguientes
+objetivos:
+I.
+
+Dar cabal cumplimiento a las disposiciones establecidas en la Ley, su Reglamento y las RGCE,
+en lo relativo al control de inventarios de las mercancías importadas temporalmente.
+
+II.
+
+Contar con un instrumento para la comprobación de los retornos de las mercancías importadas
+temporalmente y control de mercancías pendientes de retorno.
+
+III. Generar reportes que permitan dar cumplimiento a los requerimientos de información
+establecidos en las disposiciones aduaneras y de la propia autoridad.
+El sistema deberá permitir el acceso en línea a la autoridad aduanera. Para tal efecto, las empresas
+deberán otorgar a la autoridad, mediante escrito libre presentado ante la oficialía de partes de la
+AGACE, el usuario y contraseña para que la autoridad pueda ingresar al sistema al que se refiere el
+presente apartado, adjuntando el material necesario para acceder, tales como manuales, instructivos
+o guías. Asimismo, se deberá presentar el referido escrito cuando se realice alguna modificación a la
+información necesaria para que la autoridad pueda ingresar al sistema.
+
+Jueves 15 de enero de 2026
+
+DIARIO OFICIAL
+
+El sistema automatizado de control de inventarios de las empresas que cuenten con el Registro en el
+Esquema de Certificación de Empresas, cuya modalidad y rubro requiera contar con un Programa
+IMMEX vigente, deberá estar formado, por lo menos, con los catálogos y módulos señalados en el
+apartado A del presente Anexo.
+Atentamente.
+Ciudad de México, a 17 de diciembre de 2025.- En suplencia por ausencia del Jefe del Servicio de
+Administración Tributaria, con fundamento en el artículo 4, primer párrafo del Reglamento Interior del Servicio
+de Administración Tributaria, firma el Administrador General Jurídico, Lic. Ricardo Carrasco Varona.Rúbrica.
+
+

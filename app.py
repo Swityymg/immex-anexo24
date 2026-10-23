@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import hashlib
+import json
 import os
-import re
+import tomllib
 from datetime import date, datetime
 from io import StringIO
 from pathlib import Path
@@ -12,15 +12,19 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from ledger import DEFAULT_WORKBOOK, calculate_ledger, load_source_data
+from ledger import (
+    DEFAULT_WORKBOOK, calculate_ledger, create_empty_template,
+    load_csv_source_data, load_custom_xlsx_source_data, load_source_data,
+)
 from persistence import (
     DB_PATH, add_audit_event, add_entry, add_exit, get_audit_events, get_captures,
     get_close_steps, get_setting, initialize_database, set_close_step, set_setting,
 )
+from normative import gemini_models, load_anexo_text, load_status, local_normative_answer, remember_model, status_notification
+from ui_extras import kpi_cards, render_chatbot, render_header, summary_card
 
 st.set_page_config(page_title="IMMEX | Control Anexo 24", page_icon="📦", layout="wide")
 initialize_database()
-PROFILE_DIR = DEFAULT_WORKBOOK.parent / "profiles"
 
 
 @st.cache_data(show_spinner=False)
@@ -34,6 +38,61 @@ def money(value: float) -> str:
 
 def fmt_kg(value: float) -> str:
     return f"{value:,.2f} kg"
+
+
+def gemini_api_key() -> str | None:
+    key, _, _ = gemini_credential_status()
+    return key
+
+
+def gemini_credential_status() -> tuple[str | None, str, str | None]:
+    key = os.getenv("GEMINI_API_KEY")
+    if key:
+        return key, "variable de entorno", None
+    secrets_file = Path(__file__).parent / ".streamlit" / "secrets.toml"
+    if secrets_file.exists():
+        try:
+            tomllib.loads(secrets_file.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError as error:
+            line = getattr(error, "lineno", None)
+            column = getattr(error, "colno", None)
+            location = f"línea {line}, columna {column}" if line and column else str(error).split("(")[-1].rstrip(")")
+            return None, "", f".streamlit/secrets.toml no es TOML válido ({location}). Usa GEMINI_API_KEY = \"tu_clave\"."
+    try:
+        value = st.secrets.get("GEMINI_API_KEY")
+        if value:
+            return str(value), "st.secrets", None
+        return None, "", None
+    except Exception as error:
+        if type(error).__name__ in {"StreamlitSecretNotFoundError", "FileNotFoundError"}:
+            return None, "", None
+        return None, "", f"No se pudo leer .streamlit/secrets.toml ({type(error).__name__}); verifica que sea TOML válido y que la clave esté entre comillas dobles."
+
+
+def ask_gemini(prompt: str, system_instruction: str | None = None) -> str:
+    key = gemini_api_key()
+    if not key:
+        raise RuntimeError("GEMINI_API_KEY no está configurada.")
+    from google import genai
+
+    client = genai.Client(api_key=key)
+    config = None
+    if system_instruction:
+        from google.genai import types
+
+        config = types.GenerateContentConfig(system_instruction=system_instruction)
+    last_error: Exception | None = None
+    for model in gemini_models():
+        try:
+            response = client.models.generate_content(model=model, contents=prompt, config=config)
+            text = getattr(response, "text", None)
+            if not text:
+                raise RuntimeError(f"Gemini {model} devolvió una respuesta vacía.")
+            remember_model(model)
+            return text
+        except Exception as error:
+            last_error = error
+    raise RuntimeError(f"Ningún modelo Gemini configurado respondió: {last_error}")
 
 
 def read_csv_rows(upload: Any, kind: str) -> list[dict[str, Any]]:
@@ -81,53 +140,66 @@ def balance_by_fraction(ledger: pd.DataFrame) -> pd.DataFrame:
     ).sort_values("primer_vencimiento")
 
 
-def dynamic_analysis(result: dict[str, Any], cutoff: date, tolerance: float) -> str:
-    output = ["### Análisis de excepciones", ""]
-    count = 0
-    shortages = result["reconciliation"].loc[result["reconciliation"]["faltante_kg"] > 0]
-    for _, row in shortages.sort_values("faltante_kg", ascending=False).iterrows():
-        count += 1
-        output.append(
-            f"**Faltante de {row['material']} ({row['descripcion']}): {fmt_kg(row['faltante_kg'])}.** "
-            f"Requerido {fmt_kg(row['descarga_requerida_kg'])}; disponible de entradas {fmt_kg(row['importado_kg'])}."
+def local_copilot_answer(question: str, result: dict[str, Any], cutoff: date, tolerance: float,
+                        production: pd.DataFrame, company: str, rfc: str) -> str:
+    metrics = result["metrics"]
+    normalized_question = question.casefold()
+    parts = [f"**{company} · RFC {rfc} · corte {cutoff:%d/%m/%Y}**"]
+    if any(word in normalized_question for word in ("merma", "desperdicio", "scrap")):
+        high_capture = production.groupby("producto")["merma_pct"].max().to_dict() if not production.empty else {}
+        if high_capture:
+            max_product, max_rate = max(high_capture.items(), key=lambda item: item[1])
+            parts.append(
+                f"La merma capturada máxima es {float(max_rate):.2%} para {max_product}; "
+                f"la tolerancia interna vigente es {tolerance:.2%}. Las tasas consolidadas por material se calculan "
+                "ponderando kilos teóricos y pueden ser distintas de la tasa máxima de un mes."
+            )
+        above = result["merma"].loc[result["merma"]["merma_pct"] > tolerance]
+        if not above.empty:
+            parts.append("Revisiones consolidadas: " + "; ".join(
+                f"{row.producto}/{row.material} {row.merma_pct:.2%}" for row in above.itertuples()
+            ) + ".")
+    elif any(word in normalized_question for word in ("faltante", "descuadre", "mp-", "conciliar")):
+        deficits = result["reconciliation"].loc[result["reconciliation"]["faltante_kg"] > 0]
+        if deficits.empty:
+            parts.append("No hay faltantes calculados en este perfil.")
+        else:
+            for row in deficits.itertuples():
+                parts.append(
+                    f"{row.material}: faltan {fmt_kg(row.faltante_kg)}; requerida "
+                    f"{fmt_kg(row.descarga_requerida_kg)} y entradas {fmt_kg(row.importado_kg)}."
+                )
+                for exit_row in row.salidas_detalle:
+                    parts.append(f"La salida asociada registrada es {exit_row['pedimento']} ({exit_row['tipo']}) por {fmt_kg(exit_row['cantidad_kg'])}.")
+    elif any(word in normalized_question for word in ("vence", "vencimiento", "riesgo", "alerta", "pedimento")):
+        alerts = result["ledger"].loc[
+            result["ledger"]["saldo_kg"].gt(0) &
+            result["ledger"]["estatus"].isin({"VENCIDO", "ALERTA 30", "ALERTA 60", "ALERTA 90"})
+        ].sort_values("dias_restantes")
+        parts.append(
+            f"Riesgo en ventanas: {money(metrics['riesgo_alertas_mxn'])} en "
+            f"{metrics['pedimentos_alerta']} pedimentos; exposición total {money(metrics['saldo_total_mxn'])}."
         )
-        for exit_row in row["salidas_detalle"]:
-            output.append(f"- Salida {exit_row['pedimento']} · {exit_row['tipo']} · {fmt_kg(exit_row['cantidad_kg'])} · {exit_row['observacion']}")
-        output.append("Acción: validar acuse, evidencia física, lote y documento origen antes de ajustar.")
-        output.append("")
-    excess = result["merma"].loc[result["merma"]["merma_pct"] > tolerance]
-    for _, row in excess.sort_values("merma_pct", ascending=False).iterrows():
-        count += 1
-        output.append(
-            f"**Merma por arriba del umbral interno: {row['producto']} / {row['material']}, "
-            f"{row['merma_pct']:.2%} frente a {tolerance:.2%}.** Merma contabilizada: {fmt_kg(row['merma_kg'])}."
+        for row in alerts.itertuples():
+            parts.append(
+                f"{row.pedimento} · {row.material} · {row.dias_restantes} días · "
+                f"{money(row.riesgo_mxn)} · vence {row.vencimiento:%d/%m/%Y}."
+            )
+        if not alerts.empty:
+            first = alerts.iloc[0]
+            if first["dias_restantes"] <= 30:
+                parts.append(
+                    f"Prioridad: programar retorno/exportación o evaluar cambio de régimen para "
+                    f"{first['pedimento']}; validar documentos y fecha de vencimiento con el responsable aduanero."
+                )
+    else:
+        parts.append(
+            f"Exposición {money(metrics['saldo_total_mxn'])}; riesgo dentro de alertas "
+            f"{money(metrics['riesgo_alertas_mxn'])}; pedimentos en alerta {metrics['pedimentos_alerta']}; "
+            f"faltante {fmt_kg(metrics['faltante_total_kg'])}."
         )
-        output.append("Acción: revisar orden, turno, parámetros del proceso, báscula y destino del desperdicio.")
-        output.append("")
-    active = result["ledger"].loc[
-        (result["ledger"]["saldo_kg"] > 0) &
-        result["ledger"]["estatus"].isin({"VENCIDO", "ALERTA 30", "ALERTA 60", "ALERTA 90"})
-    ].sort_values("dias_restantes")
-    for _, row in active.iterrows():
-        count += 1
-        output.append(
-            f"**Lote próximo a vencer: {row['pedimento']} / {row['material']} / fracción {row['fraccion']}.** "
-            f"{fmt_kg(row['saldo_kg'])}; vence {row['vencimiento']:%d/%m/%Y}, "
-            f"{row['dias_restantes']} días al corte {cutoff:%d/%m/%Y}. "
-            "Acción: evaluar retorno/exportación, transferencia o cambio de régimen con asesoría aduanera."
-        )
-        output.append("")
-    if count == 0:
-        output.append("No se detectaron faltantes, mermas por arriba del umbral ni lotes en alertas.")
-    output.extend([
-        "### Plan de respuesta",
-        "1. Conciliar cada diferencia con documentos fuente y su responsable operativo.",
-        "2. Registrar correcciones solo contra evidencia aprobada, manteniendo el rastro de auditoría.",
-        "3. Calendarizar retorno o regularización de los lotes próximos a vencer.",
-        "",
-        "Análisis para priorización; no es una opinión legal ni determina por sí mismo una infracción.",
-    ])
-    return "\n".join(output)
+    parts.append("Acción recomendada: cotejar los cálculos con documentos fuente y registrar cualquier ajuste con motivo y evidencia.")
+    return "\n\n".join(parts)
 
 
 @st.fragment(run_every="1s")
@@ -136,42 +208,55 @@ def render_close_clock(started_at: str) -> None:
     st.metric("Tiempo del cierre", f"{elapsed // 3600:02d}:{elapsed // 60 % 60:02d}:{elapsed % 60:02d}")
 
 
-st.title("Control de inventarios IMMEX")
-st.caption("ANEXO 24 · PEPS estricto · Exposición y conciliación operativa")
-
 with st.sidebar:
     st.header("Perfil y sesión")
     role = st.radio("Vista", ["Operación", "Gerencia", "Auditor (solo lectura)"])
     readonly = role == "Auditor (solo lectura)"
     operator = st.text_input("Usuario / responsable", "Auditor" if readonly else "Operador IMMEX", disabled=readonly)
     reason = st.text_input("Motivo", "Consulta de auditoría" if readonly else "")
+    configured_key, key_source, key_error = gemini_credential_status()
+    if key_error:
+        st.error("IA IMMEX · secrets.toml inválido. La clave debe tener formato `GEMINI_API_KEY = \"...\"`.")
+    elif configured_key:
+        st.caption(f"IA IMMEX · Gemini conectado desde {key_source}")
+    else:
+        st.caption("IA IMMEX · modo local; configura GEMINI_API_KEY")
     if not readonly and not reason.strip():
         st.caption("Indica el motivo para habilitar cambios y altas auditables.")
-    if not readonly:
-        uploaded_profile = st.file_uploader("Agregar perfil Excel", type=["xlsx"])
-        if uploaded_profile is not None:
-            digest = hashlib.sha256(uploaded_profile.getvalue()).hexdigest()
-            if st.session_state.get("profile_digest") != digest:
-                PROFILE_DIR.mkdir(parents=True, exist_ok=True)
-                name = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(uploaded_profile.name).stem)
-                path = PROFILE_DIR / f"{name}-{datetime.now():%Y%m%d%H%M%S}.xlsx"
-                path.write_bytes(uploaded_profile.getvalue())
-                st.session_state.profile_digest = digest
-                st.rerun()
-    profile_paths = [DEFAULT_WORKBOOK, *sorted((PROFILE_DIR.glob("*.xlsx") if PROFILE_DIR.exists() else []))]
-    labels = {path.name: path for path in profile_paths}
-    profile_name = st.selectbox("Perfil / RFC", list(labels))
-    profile_path = labels[profile_name]
+    data_origin = st.radio(
+        "Origen de datos",
+        ["Archivo oficial de prueba", "Cargar archivo propio (.xlsx o .csv)"],
+        disabled=readonly,
+    )
+    own_upload = None
+    if data_origin == "Cargar archivo propio (.xlsx o .csv)" and not readonly:
+        own_upload = st.file_uploader("Archivo propio", type=["xlsx", "csv"])
+    st.download_button(
+        "Descargar plantilla modelo vacía",
+        data=create_empty_template(),
+        file_name="Plantilla_Anexo24_vacia.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        disabled=readonly,
+    )
 
+profile_name = DEFAULT_WORKBOOK.name
 try:
-    source = load_data(str(profile_path))
+    if own_upload is not None:
+        if own_upload.name.lower().endswith(".csv"):
+            source = load_csv_source_data(own_upload)
+        else:
+            source = load_custom_xlsx_source_data(own_upload)
+        profile_name = own_upload.name
+    else:
+        source = load_data(str(DEFAULT_WORKBOOK))
 except Exception as error:
-    st.error(f"No se pudo leer el perfil: {error}")
+    st.error(f"No se pudo leer el origen seleccionado: {error}")
     st.stop()
+profile_name = source.get("profile_name", profile_name)
 
 params = source["params"]
-company = str(params.get("Razón social", profile_path.stem))
-rfc = str(params.get("RFC", profile_path.stem))
+company = str(params.get("Razón social", Path(profile_name).stem))
+rfc = str(params.get("RFC", Path(profile_name).stem))
 cutoff_default = params.get("Fecha de corte") or date.today()
 if isinstance(cutoff_default, str):
     cutoff_default = pd.to_datetime(cutoff_default).date()
@@ -215,21 +300,143 @@ ledger = result["ledger"]
 metrics = result["metrics"]
 active_lots = ledger.loc[ledger["saldo_kg"] > 0].sort_values("dias_restantes")
 first_due = active_lots.iloc[0] if not active_lots.empty else None
-cols = st.columns(4)
-cols[0].metric("Exposición total", money(metrics["saldo_total_mxn"]))
-cols[1].metric("En ventanas de alerta", money(metrics["riesgo_alertas_mxn"]))
-cols[2].metric("Pedimentos por atender", str(metrics["pedimentos_alerta"]))
-cols[3].metric("Faltante por conciliar", fmt_kg(metrics["faltante_total_kg"]))
-if first_due is not None:
-    urgency = "vencido" if first_due["dias_restantes"] < 0 else "vence en"
-    st.warning(f"Primer vencimiento: {first_due['pedimento']} · {first_due['material']} · {urgency} {abs(int(first_due['dias_restantes']))} días ({first_due['vencimiento']:%d/%m/%Y}).")
+norm_status = load_status()
+
+notification_items: list[dict[str, str]] = []
+urgent_lots = active_lots.loc[active_lots["dias_restantes"] <= 30]
+for _, lot in urgent_lots.iterrows():
+    notification_items.append({
+        "level": "critical",
+        "title": f"Vencimiento · {lot['pedimento']} · {lot['material']}",
+        "detail": f"{int(lot['dias_restantes'])} días · {money(lot['riesgo_mxn'])} en riesgo",
+        "action": f"Prepara un borrador de plan de retorno o regularización para {lot['pedimento']} ({lot['material']}); solicita evidencia y no afirmes una rectificación sin revisar documentos.",
+        "button": "Preparar borrador de retorno",
+    })
+for _, shortage in result["reconciliation"].loc[result["reconciliation"]["faltante_kg"] > 1e-9].iterrows():
+    notification_items.append({
+        "level": "warning",
+        "title": f"Faltante · {shortage['material']}",
+        "detail": f"{fmt_kg(shortage['faltante_kg'])} por conciliar",
+        "action": f"Prepara una lista de verificación documental para el faltante de {shortage['material']} por {fmt_kg(shortage['faltante_kg'])}, incluyendo entradas, consumos y salidas asociadas.",
+        "button": "Preparar conciliación",
+    })
+if not source["production"].empty:
+    deviation_by_product = source["production"].groupby("producto")["merma_pct"].max()
+    for product, rate in deviation_by_product.items():
+        if float(rate) > tolerance:
+            production_row = source["production"].loc[
+                (source["production"]["producto"] == product) &
+                (source["production"]["merma_pct"] == rate)
+            ].iloc[0]
+            notification_items.append({
+                "level": "info",
+                "title": f"Desviación operativa · {product}",
+                "detail": f"Merma capturada {float(rate):.2%} · tolerancia interna {tolerance:.2%} · {production_row['periodo']}",
+                "action": f"Sugiere una revisión de causa raíz para merma {product} de {float(rate):.2%} en {production_row['periodo']}; solicita lote, turno, calidad y evidencia de báscula.",
+                "button": "Preparar revisión de proceso",
+            })
+
+norm_notification = status_notification(norm_status)
+notification_items.append(norm_notification)
+
+
+def app_context() -> dict[str, Any]:
+    production_rates = source["production"].groupby("producto")["merma_pct"].max().to_dict() if not source["production"].empty else {}
+    alert_statuses = {"VENCIDO", "ALERTA 30", "ALERTA 60", "ALERTA 90"}
+    return {
+        "perfil": profile_name, "razon_social": company, "rfc": rfc, "fecha_corte": cutoff.isoformat(),
+        "riesgo_total_mxn": round(metrics["saldo_total_mxn"], 2),
+        "riesgo_en_alertas_mxn": round(metrics["riesgo_alertas_mxn"], 2),
+        "pedimentos_en_alerta": ledger.loc[ledger["estatus"].isin(alert_statuses),
+            ["pedimento", "material", "saldo_kg", "riesgo_mxn", "dias_restantes", "estatus"]].to_dict("records"),
+        "faltantes": result["reconciliation"].loc[result["reconciliation"]["faltante_kg"] > 0,
+            ["material", "descripcion", "faltante_kg", "salidas_detalle"]].to_dict("records"),
+        "merma_maxima_capturada_por_producto": production_rates,
+        "merma_consolidada": result["merma"].to_dict("records"),
+        "tolerancia_interna": tolerance,
+        "vigilante_anexo24": norm_status,
+    }
+
+
+def answer_question(question: str) -> str:
+    system_prompt = (
+        "Eres IA IMMEX, copiloto del Control Anexo 24. Responde en español, de forma amable y breve. "
+        "Distingue hechos calculados de hipótesis, no inventes normas ni des asesoría legal definitiva. "
+        "Para preguntas normativas usa el estado persistido del monitor y el texto oficial Anexo 24 RGCE 2026 "
+        "fechado 15/01/2026 que sigue; no afirmes que es una versión más reciente que esa fecha.\n\n"
+        "ESTADO DEL MONITOR:\n" + json.dumps(norm_status, ensure_ascii=False, default=str) +
+        "\n\nCONTEXTO DEL LEDGER:\n" + json.dumps(app_context(), ensure_ascii=False, default=str) +
+        "\n\nTEXTO DE REFERENCIA DEL ANEXO 24:\n" + load_anexo_text()
+    )
+    if gemini_api_key():
+        try:
+            return ask_gemini(question, system_instruction=system_prompt)
+        except Exception as error:
+            fallback = local_normative_answer(norm_status) if any(term in question.casefold() for term in ("dof", "rgce", "anexo", "cambio", "actualiz")) else local_copilot_answer(question, result, cutoff, tolerance, source["production"], company, rfc)
+            return f"Gemini no respondió ({type(error).__name__}). Respuesta local, no generada por IA.\n\n{fallback}"
+    if any(term in question.casefold() for term in ("dof", "rgce", "anexo", "cambio", "actualiz", "norma")):
+        return "**Modo local (sin Gemini).**\n\n" + local_normative_answer(norm_status)
+    return "**Modo local (sin Gemini).**\n\n" + local_copilot_answer(question, result, cutoff, tolerance, source["production"], company, rfc)
+
+
+def daily_summary() -> tuple[str, str]:
+    cache_key = (rfc, cutoff.isoformat(), round(metrics["saldo_total_mxn"], 2),
+                 round(metrics["riesgo_alertas_mxn"], 2), norm_status.get("checked_at") if norm_status else None,
+                 bool(gemini_api_key()))
+    cached = st.session_state.get("daily_summary")
+    if cached and cached["key"] == cache_key:
+        return cached["text"], cached["source"]
+    lines = [
+        f"- **Exposición:** {money(metrics['saldo_total_mxn'])}; **en ventanas de alerta:** {money(metrics['riesgo_alertas_mxn'])} en {metrics['pedimentos_alerta']} pedimento(s)."
+    ]
+    if first_due is not None:
+        days = int(first_due["dias_restantes"])
+        due = f"venció hace {abs(days)} días" if days < 0 else f"vence en {days} días ({first_due['vencimiento']:%d/%m/%Y})"
+        lines.append(f"- **Lo más urgente:** {first_due['pedimento']} · {first_due['material']} {due}.")
+    if metrics["faltante_total_kg"] > 0:
+        lines.append(f"- **Por conciliar:** {fmt_kg(metrics['faltante_total_kg'])} de faltante agregado.")
+    lines.append(f"- **Anexo 24:** {norm_notification['title']}. {norm_notification['detail']}")
+    summary, source_label = "\n".join(lines), "cálculo local"
+    if gemini_api_key():
+        try:
+            summary = ask_gemini(
+                "Escribe un resumen ejecutivo del día en exactamente cuatro viñetas breves con prioridad y siguiente paso. "
+                "No inventes hechos normativos; usa solo el contexto: " + json.dumps(app_context(), ensure_ascii=False, default=str),
+                system_instruction=(
+                    "Eres IA IMMEX, asistente ejecutivo. No des asesoría legal definitiva. Para contenido normativo "
+                    "la única fuente documental cargada es el Anexo 24 RGCE 2026 con fecha 15/01/2026; no afirmes que "
+                    "es la versión vigente más reciente. Texto de referencia:\n" + load_anexo_text()
+                ),
+            )
+            source_label = "Gemini"
+        except Exception:
+            source_label = "cálculo local (Gemini no disponible)"
+    st.session_state.daily_summary = {"key": cache_key, "text": summary, "source": source_label}
+    return summary, source_label
+
+
+header_slot = st.container()
+render_header(header_slot, notification_items)
+kpi_cards([
+    ("Exposición total", f"${metrics['saldo_total_mxn']:,.2f}", "MXN", "risk"),
+    ("En ventanas de alerta", f"${metrics['riesgo_alertas_mxn']:,.2f}", "MXN", "warning"),
+    ("Pedimentos por atender", str(metrics["pedimentos_alerta"]), "", "neutral"),
+    ("Faltante por conciliar", f"{metrics['faltante_total_kg']:,.2f}", "kg", "warning"),
+])
+show_daily_summary = st.toggle("☀️ Resumen del día", value=False)
+if show_daily_summary:
+    summary_text, summary_source = daily_summary()
+    summary_card(summary_text, summary_source, cutoff)
+render_chatbot(answer_question)
 
 if readonly:
     tabs = st.tabs(["Exposición", "Ledger", "Reporte por fracción", "Bitácora"])
+elif role == "Gerencia":
+    tabs = st.tabs(["Dashboard BI", "Riesgo y vencimientos", "Reportes", "Bitácora"])
 else:
     tabs = st.tabs([
-        "Inicio Gerencial", "Ledger y Simulador PEPS", "Captura operativa", "Excepciones y Mermas",
-        "Asistente IA", "Cierre mensual", "Reportes Anexo 24", "Bitácora",
+        "Panel de operación", "Ledger y Simulador PEPS", "Captura operativa", "Excepciones y Mermas",
+        "Cierre mensual", "Reportes Anexo 24", "Bitácora",
     ])
 
 if readonly:
@@ -244,6 +451,97 @@ if readonly:
         st.dataframe(balance_by_fraction(ledger), use_container_width=True, hide_index=True)
     with tabs[3]:
         st.dataframe(pd.DataFrame(get_audit_events(rfc)), use_container_width=True, hide_index=True)
+elif role == "Gerencia":
+    with tabs[0]:
+        st.subheader("Dashboard ejecutivo")
+        left, right = st.columns([1.4, 1])
+        with left:
+            if not ledger.empty:
+                exposure = balance_by_fraction(ledger)
+                fraction_chart = px.bar(
+                    exposure.sort_values("riesgo_mxn", ascending=True),
+                    x="riesgo_mxn", y="fraccion", orientation="h",
+                    labels={"riesgo_mxn": "Exposición (MXN)", "fraccion": "Fracción arancelaria"},
+                    title="Exposición por fracción arancelaria",
+                    color_discrete_sequence=["#8297a5"],
+                )
+                fraction_chart.update_layout(showlegend=False, height=340, xaxis_tickprefix="$", xaxis_tickformat=",.0f")
+                st.plotly_chart(fraction_chart, use_container_width=True)
+            else:
+                st.info("No hay lotes para mostrar.")
+        with right:
+            status_order = ["VENCIDO", "ALERTA 30", "ALERTA 60", "ALERTA 90", "OK", "Agotado"]
+            status_data = ledger.groupby("estatus", as_index=False)["riesgo_mxn"].sum()
+            status_data = status_data.set_index("estatus").reindex(status_order, fill_value=0).reset_index()
+            status_chart = px.pie(
+                status_data, names="estatus", values="riesgo_mxn", hole=0.62,
+                title="Composición de exposición",
+                color_discrete_sequence=["#be6575", "#d89b61", "#d3ba72", "#80a69a", "#7f99a8", "#c9c2c5"],
+            )
+            status_chart.update_layout(height=340, showlegend=True, legend_title_text="Estatus")
+            st.plotly_chart(status_chart, use_container_width=True)
+
+        st.subheader("Tendencia de vencimientos")
+        if not active_lots.empty:
+            horizon = active_lots.loc[active_lots["dias_restantes"] <= 180].copy()
+            if not horizon.empty:
+                horizon["ventana"] = pd.cut(
+                    horizon["dias_restantes"], bins=[-100000, 0, 30, 60, 90, 180],
+                    labels=["Vencido", "0-30 días", "31-60 días", "61-90 días", "91-180 días"],
+                )
+                timeline = horizon.groupby("ventana", observed=False, as_index=False).agg(
+                    lotes=("pedimento", "nunique"), riesgo_mxn=("riesgo_mxn", "sum")
+                )
+                st.dataframe(timeline, use_container_width=True, hide_index=True,
+                             column_config={"riesgo_mxn": st.column_config.NumberColumn(format="$%.2f")})
+            else:
+                st.success("No hay vencimientos dentro de 180 días.")
+        st.subheader("Indicadores operativos")
+        scrap_columns = st.columns(3)
+        scrap_columns[0].metric("Materiales con faltante", str(int((result["reconciliation"]["faltante_kg"] > 0).sum())))
+        scrap_columns[1].metric("Desviaciones de merma", str(int((result["merma"]["merma_pct"] > tolerance).sum())))
+        scrap_columns[2].metric("Valor total en inventario", money(metrics["saldo_total_mxn"]))
+
+    with tabs[1]:
+        st.subheader("Lotes para decisión gerencial")
+        st.dataframe(
+            active_lots[["pedimento", "material", "fraccion", "saldo_kg", "riesgo_mxn", "vencimiento", "dias_restantes", "estatus"]],
+            use_container_width=True, hide_index=True,
+            column_config={"riesgo_mxn": st.column_config.NumberColumn(format="$%.2f")},
+        )
+        st.subheader("Faltantes y merma")
+        manager_exceptions, manager_scrap = st.columns(2)
+        with manager_exceptions:
+            st.caption("Faltantes por material")
+            st.dataframe(
+                result["reconciliation"].loc[result["reconciliation"]["faltante_kg"] > 0,
+                    ["material", "descripcion", "faltante_kg"]],
+                use_container_width=True, hide_index=True,
+            )
+        with manager_scrap:
+            st.caption("Mermas consolidadas sobre tolerancia")
+            st.dataframe(
+                result["merma"].loc[result["merma"]["merma_pct"] > tolerance,
+                    ["producto", "material", "merma_pct", "tolerancia_pct"]],
+                use_container_width=True, hide_index=True,
+                column_config={"merma_pct": st.column_config.NumberColumn(format="percent"),
+                               "tolerancia_pct": st.column_config.NumberColumn(format="percent")},
+            )
+
+    with tabs[2]:
+        st.subheader("Reportes ejecutivos")
+        st.dataframe(balance_by_fraction(ledger), use_container_width=True, hide_index=True)
+        st.download_button(
+            "Descargar saldos por fracción",
+            data=csv_report("Saldos por fracción", company, rfc, balance_by_fraction(ledger)),
+            file_name=f"anexo24_{rfc}_saldos_por_fraccion_{cutoff.isoformat()}.csv",
+            mime="text/csv",
+        )
+
+    with tabs[3]:
+        events = pd.DataFrame(get_audit_events(rfc))
+        st.subheader("Bitácora")
+        st.dataframe(events, use_container_width=True, hide_index=True)
 else:
     with tabs[0]:
         st.subheader("Prioridades de hoy")
@@ -440,46 +738,6 @@ else:
         st.dataframe(alerts, use_container_width=True, hide_index=True)
 
     with tabs[4]:
-        st.subheader("Asistente de auditoría")
-        st.caption("Configura ANTHROPIC_API_KEY como variable de entorno o secreto de Streamlit; la clave no se solicita en pantalla.")
-        if st.button("Analizar todas las excepciones", type="primary"):
-            analysis = dynamic_analysis(result, cutoff, tolerance)
-            api_key = os.getenv("ANTHROPIC_API_KEY")
-            try:
-                api_key = api_key or st.secrets.get("ANTHROPIC_API_KEY")
-            except Exception:
-                pass
-            if api_key:
-                try:
-                    import anthropic
-
-                    model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
-                    client = anthropic.Anthropic(api_key=api_key)
-                    with st.spinner("Analizando las excepciones de este perfil..."):
-                        response = client.messages.create(
-                            model=model, max_tokens=2400,
-                            messages=[{
-                                "role": "user",
-                                "content": (
-                                    "Eres un asistente operativo IMMEX. Explica cada excepción entregada, distingue hechos de hipótesis, "
-                                    "no inventes disposiciones legales ni afirmes infracciones, y plantea acciones con evidencia y responsable. "
-                                    "Considera todo el perfil y todas las partidas.\n\n" + analysis
-                                ),
-                            }],
-                        )
-                    answer = "\n".join(block.text for block in response.content if getattr(block, "type", "") == "text")
-                    st.markdown(answer or analysis)
-                    add_audit_event(rfc, operator, "Asistente IA", "Análisis completo de excepciones", profile_name,
-                                    None, {"modelo": model})
-                except Exception as error:
-                    st.error(f"La llamada a Anthropic falló ({type(error).__name__}): {error}")
-                    st.markdown("**Análisis local completo, no respuesta generada por IA:**")
-                    st.markdown(analysis)
-            else:
-                st.info("No hay credencial configurada. Se muestra el análisis determinista local de todas las excepciones.")
-                st.markdown(analysis)
-
-    with tabs[5]:
         st.subheader("Cierre mensual")
         period = st.text_input("Periodo", value=cutoff.strftime("%Y-%m"), key="close_month")
         timer_key = f"close_timer_{period}"
@@ -513,7 +771,7 @@ else:
                 set_close_step(rfc, period, index, checked, operator, reason.strip())
                 st.rerun()
 
-    with tabs[6]:
+    with tabs[5]:
         st.subheader("Reportes del Apartado A")
         report_name = st.selectbox("Reporte", ["Entradas", "Salidas", "Saldos por fracción", "Materiales Utilizados"])
         if report_name == "Entradas":
@@ -532,7 +790,7 @@ else:
             mime="text/csv", icon=":material/download:",
         )
 
-    with tabs[7]:
+    with tabs[6]:
         st.subheader("Bitácora automática")
         events = pd.DataFrame(get_audit_events(rfc))
         if events.empty:

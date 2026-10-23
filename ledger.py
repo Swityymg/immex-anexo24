@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import calendar
+import io
 import re
+import unicodedata
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from openpyxl import load_workbook
+from openpyxl import Workbook
 
 
 DEFAULT_WORKBOOK = Path(__file__).parent / "data" / "IMMEX_Template_v2.xlsx"
@@ -47,6 +50,136 @@ def _records(sheet: Any, start_row: int, columns: tuple[int, ...]) -> list[tuple
         if any(value is not None for value in selected):
             result.append(selected)
     return result
+
+
+def _normalize_header(value: Any) -> str:
+    text = unicodedata.normalize("NFKD", str(value)).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
+def load_csv_source_data(upload: Any) -> dict[str, Any]:
+    upload.seek(0)
+    frame = pd.read_csv(upload, sep=None, engine="python", encoding="utf-8-sig", dtype=str)
+    aliases = {
+        "pedimento": {"pedimento", "numero_pedimento", "numero_de_pedimento", "num_pedimento"},
+        "clave": {"clave", "clave_pedimento", "clave_operacion"},
+        "fecha_entrada": {"fecha_entrada", "fecha", "fecha_importacion", "fecha_de_importacion", "entry_date"},
+        "material": {"material", "clave_material", "sku", "item"},
+        "cantidad_kg": {"cantidad_kg", "cantidad", "kg", "quantity"},
+        "valor_unit_usd": {"valor_unit_usd", "usd_kg", "valor_usd_kg", "valor_unitario_usd"},
+        "fraccion": {"fraccion", "fraccion_arancelaria", "hts"},
+        "descripcion": {"descripcion", "descripcion_material", "material_description"},
+        "plazo_meses": {"plazo_meses", "plazo_legal_meses"},
+        "rfc": {"rfc"},
+        "razon_social": {"razon_social", "empresa", "company"},
+    }
+    normalized = {_normalize_header(column): column for column in frame.columns}
+    mapped = {
+        target: next((normalized[candidate] for candidate in candidates if candidate in normalized), None)
+        for target, candidates in aliases.items()
+    }
+    required = ["pedimento", "fecha_entrada", "material", "cantidad_kg"]
+    missing = [key for key in required if mapped[key] is None]
+    if missing:
+        expected = ", ".join(required)
+        raise ValueError(f"No pude mapear columnas: {', '.join(missing)}. Se esperan al menos: {expected}.")
+
+    entries = []
+    for index, (_, row) in enumerate(frame.iterrows(), start=1):
+        material = str(row[mapped["material"]]).strip()
+        pedimento = str(row[mapped["pedimento"]]).strip()
+        if not material or material.lower() == "nan" or not pedimento or pedimento.lower() == "nan":
+            continue
+        entries.append({
+            "pedimento": pedimento,
+            "lote_id": f"csv-entry-{index}",
+            "clave": str(row[mapped["clave"]]).strip() if mapped["clave"] and pd.notna(row[mapped["clave"]]) else "IN",
+            "fecha_entrada": pd.to_datetime(row[mapped["fecha_entrada"]]).date(),
+            "material": material,
+            "cantidad_kg": float(row[mapped["cantidad_kg"]]),
+            "valor_unit_usd": float(row[mapped["valor_unit_usd"]]) if mapped["valor_unit_usd"] and pd.notna(row[mapped["valor_unit_usd"]]) else 0.0,
+        })
+    if not entries:
+        raise ValueError("El CSV no contiene filas de entradas utilizables.")
+
+    material_rows = []
+    for material, group in frame.groupby(frame[mapped["material"]].astype(str).str.strip(), dropna=True):
+        first = group.iloc[0]
+        material_rows.append({
+            "material": material,
+            "descripcion": first[mapped["descripcion"]] if mapped["descripcion"] else material,
+            "fraccion": str(first[mapped["fraccion"]]) if mapped["fraccion"] and pd.notna(first[mapped["fraccion"]]) else "",
+            "unidad": "KGM",
+            "plazo_meses": int(first[mapped["plazo_meses"]]) if mapped["plazo_meses"] and pd.notna(first[mapped["plazo_meses"]]) else 18,
+        })
+    rfc = "CSV-PERFIL"
+    if mapped["rfc"] and frame[mapped["rfc"]].notna().any():
+        rfc = str(frame[mapped["rfc"]].dropna().iloc[0]).strip()
+    company = "Perfil importado por CSV"
+    if mapped["razon_social"] and frame[mapped["razon_social"]].notna().any():
+        company = str(frame[mapped["razon_social"]].dropna().iloc[0]).strip()
+    return {
+        "params": {"RFC": rfc, "Razón social": company, "Fecha de corte": date.today(),
+                   "Tipo de cambio MXN por USD": 18.5, "Tolerancia de merma (alerta interna)": 0.03},
+        "materials": pd.DataFrame(material_rows, columns=["material", "descripcion", "fraccion", "unidad", "plazo_meses"]),
+        "bom": pd.DataFrame(columns=["producto", "material", "kg_por_pieza"]),
+        "entries": pd.DataFrame(entries, columns=["pedimento", "lote_id", "clave", "fecha_entrada", "material", "cantidad_kg", "valor_unit_usd"]),
+        "production": pd.DataFrame(columns=["periodo", "producto", "piezas", "merma_pct"]),
+        "exits": pd.DataFrame(columns=["pedimento", "clave", "fecha", "material", "tipo", "cantidad_kg", "observacion"]),
+        "profile_name": getattr(upload, "name", "perfil.csv"),
+        "baseline_oracles": False,
+    }
+
+
+def load_custom_xlsx_source_data(upload: Any) -> dict[str, Any]:
+    upload.seek(0)
+    try:
+        return load_source_data(upload)
+    except ValueError as error:
+        if "Faltan hojas requeridas" not in str(error):
+            raise
+    upload.seek(0)
+    frame = pd.read_excel(upload, dtype=str)
+    csv_buffer = io.BytesIO(frame.to_csv(index=False).encode("utf-8"))
+    csv_buffer.name = getattr(upload, "name", "perfil.xlsx")
+    return load_csv_source_data(csv_buffer)
+
+
+def create_empty_template() -> bytes:
+    workbook = Workbook()
+    readme = workbook.active
+    readme.title = "LEEME"
+    readme.append(["Plantilla modelo Anexo 24", "Capture solo entradas y no altere los encabezados."])
+
+    parameters = workbook.create_sheet("Parametros")
+    parameters.append(["Parámetros"])
+    parameters.append([])
+    parameters.append(["Parámetro", "Valor", "Tipo", "Nota"])
+    for label in ["Razón social", "RFC", "Programa IMMEX (No. SE)", "Fecha de corte",
+                  "Tipo de cambio MXN por USD", "Tolerancia de merma (alerta interna)"]:
+        parameters.append([label, None, "CAPTURA", None])
+
+    catalogs = workbook.create_sheet("Catalogos")
+    catalogs.cell(3, 1, "Materiales")
+    catalogs.cell(3, 8, "Lista de materiales (BOM)")
+    for col, value in enumerate(["Clave", "Descripción", "Fracción", "UM TIGIE", "Plazo legal (meses)", "Fundamento"], start=1):
+        catalogs.cell(4, col, value)
+    for col, value in enumerate(["Producto", "Material", "kg por pieza"], start=8):
+        catalogs.cell(4, col, value)
+
+    entries = workbook.create_sheet("Entradas")
+    for col, value in enumerate(["Pedimento", "Clave", "Fecha de entrada", "Material", "Descripción", "Fracción", "Cantidad (kg)", "Valor unitario (USD/kg)"], start=1):
+        entries.cell(4, col, value)
+    production = workbook.create_sheet("Consumo")
+    for col, value in enumerate(["Periodo", "Producto", "Piezas producidas", "Merma real (%)"], start=1):
+        production.cell(4, col, value)
+    exits = workbook.create_sheet("Salidas")
+    for col, value in enumerate(["Pedimento", "Clave", "Fecha", "Material", "Tipo", "Cantidad (kg)", "Observación"], start=1):
+        exits.cell(4, col, value)
+
+    output = io.BytesIO()
+    workbook.save(output)
+    return output.getvalue()
 
 
 def load_source_data(path: Any = DEFAULT_WORKBOOK) -> dict[str, Any]:

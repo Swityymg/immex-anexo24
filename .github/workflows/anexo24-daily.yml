@@ -1,0 +1,34 @@
+name: Chequeo diario Anexo 24
+
+on:
+  schedule:
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Días hacia atrás a revisar"
+        default: "3"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Escanear publicaciones del DOF
+        run: python scripts/check_anexo24.py
+        env:
+          DAYS: ${{ github.event.inputs.days || '3' }}
+      - name: Guardar estado del monitor
+        run: |
+          git config user.name "anexo24-bot"
+          git config user.email "anexo24-bot@users.noreply.github.com"
+          git add data/normative_status.json
+          git diff --cached --quiet || (git commit -m "chore: chequeo diario Anexo 24" && git push)

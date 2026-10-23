@@ -13,9 +13,15 @@ streamlit run app.py
 
 Abre la URL local que Streamlit muestre en la terminal. SQLite crea `data/anexo24.sqlite3` al iniciar; guarda altas, salidas, parámetros, avances de cierre y eventos de auditoría. `.gitignore` excluye la base demo y el entorno virtual.
 
-Para habilitar el análisis remoto, define `ANTHROPIC_API_KEY` en el entorno antes de arrancar, o declárala en `.streamlit/secrets.toml`. El modelo predeterminado es `claude-sonnet-5-5`; `ANTHROPIC_MODEL` permite configurarlo. Sin credencial, el asistente produce un análisis determinista local de todas las excepciones; un fallo remoto se muestra explícitamente y no se disfraza como respuesta de IA.
+Para habilitar Gemini, define `GEMINI_API_KEY` en el entorno antes de arrancar o crea `.streamlit/secrets.toml` con el formato indicado en `.streamlit/secrets.toml.example`. La clave compartida en el chat debe revocarse y reemplazarse antes de volver a usar Gemini. IA IMMEX usa modelos Gemini Flash estables con fallback automático entre `gemini-3.8-flash`, `gemini-3.6-flash`, `gemini-3.5-flash-lite` y `gemini-2.5-flash`. Sin credencial, responde desde los cálculos locales; si Gemini falla, la respuesta local se identifica como tal.
 
-Las cargas Excel se agregan como perfiles en `data/profiles/`. El CSV masivo de entradas requiere `pedimento, clave, fecha_entrada, material, cantidad_kg, valor_unit_usd`; el de salidas requiere `pedimento, clave, fecha, material, tipo, cantidad_kg` y opcionalmente `observacion`.
+En la barra lateral se puede usar el archivo oficial del reto o cargar un Excel/CSV propio. El Excel puede usar las hojas Anexo 24 o una primera hoja tabular con encabezados mapeables. El CSV de entradas requiere pedimento, fecha, material y cantidad; admite campos opcionales de clave, fracción, descripción, valor unitario, plazo, RFC y razón social. La descarga genera una plantilla Excel vacía con las hojas de captura requeridas.
+
+El workflow `.github/workflows/anexo24-daily.yml` programa `scripts/check_anexo24.py` a las 07:00 hora de Ciudad de México. El resultado se guarda en `data/normative_status.json`, que alimenta la campana, el resumen del día y el contexto de IA IMMEX. Para recibir el estado automático, publica el repositorio en GitHub, habilita Actions y ejecuta manualmente una primera vez «Chequeo diario Anexo 24»; después corre cada día. La app no ejecuta un proceso diario si el servidor está apagado.
+
+El documento base incluido es el **Anexo 24 de RGCE 2026 publicado el 15/01/2026**, disponible en `data/Anexo_24_RGCE_2026.pdf` y como texto extraído `data/anexo24_2026.txt`. No se debe describir como “última versión” sin comprobar publicaciones posteriores. El escaneo automático de títulos/texto es una señal de revisión, no una validación jurídica completa; un fallo de red se muestra como “no verificado”, no como ausencia de cambios.
+
+La UI muestra una campana ordenada por prioridad, cuatro tarjetas KPI blancas con borde uniforme, el resumen del día cerrado por defecto en un toggle y el chatbot IA IMMEX 🤖 flotante en la esquina inferior derecha. Gerencia y Operación tienen dashboards distintos: Gerencia ve agregados BI y decisiones; Operación conserva captura, ledger, simulador PEPS, excepciones y cierre.
 
 ## Criterios del MVP
 

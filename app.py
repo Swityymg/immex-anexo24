@@ -203,6 +203,37 @@ def local_copilot_answer(question: str, result: dict[str, Any], cutoff: date, to
 
 
 @st.fragment(run_every="1s")
+def _local_impact_narrative(delta_exposure: float, delta_risk: float, hyp: dict, base: dict) -> str:
+    lines = ["**Análisis del escenario hipotético (cálculo local)**\n"]
+    if abs(delta_exposure) < 1:
+        lines.append("La exposición total no cambia con este escenario.")
+    elif delta_exposure < 0:
+        lines.append(f"La exposición total **disminuiría {money(abs(delta_exposure))}**, pasando de {money(base['saldo_total_mxn'])} a {money(hyp['saldo_total_mxn'])}.")
+    else:
+        lines.append(f"La exposición total **aumentaría {money(delta_exposure)}**, pasando de {money(base['saldo_total_mxn'])} a {money(hyp['saldo_total_mxn'])}.")
+
+    if abs(delta_risk) < 1:
+        lines.append("El riesgo en ventanas de alerta no cambia.")
+    elif delta_risk < 0:
+        lines.append(f"El riesgo en alertas **bajaría {money(abs(delta_risk))}** (de {money(base['riesgo_alertas_mxn'])} a {money(hyp['riesgo_alertas_mxn'])}).")
+    else:
+        lines.append(f"El riesgo en alertas **subiría {money(delta_risk)}** (de {money(base['riesgo_alertas_mxn'])} a {money(hyp['riesgo_alertas_mxn'])}).")
+
+    delta_ped = hyp["pedimentos_alerta"] - base["pedimentos_alerta"]
+    if delta_ped < 0:
+        lines.append(f"El número de pedimentos en alerta se reduciría en {abs(delta_ped)} ({base['pedimentos_alerta']} → {hyp['pedimentos_alerta']}).")
+    elif delta_ped > 0:
+        lines.append(f"El número de pedimentos en alerta aumentaría en {delta_ped} ({base['pedimentos_alerta']} → {hyp['pedimentos_alerta']}).")
+
+    delta_falt = hyp["faltante_total_kg"] - base["faltante_total_kg"]
+    if abs(delta_falt) > 0.01:
+        direction = "aumentaría" if delta_falt > 0 else "disminuiría"
+        lines.append(f"El faltante total {direction} en {fmt_kg(abs(delta_falt))} ({fmt_kg(base['faltante_total_kg'])} → {fmt_kg(hyp['faltante_total_kg'])}).")
+
+    lines.append("\n_Acción recomendada: valida los supuestos del escenario con documentos fuente antes de tomar decisiones._")
+    return "\n\n".join(lines)
+
+
 def render_close_clock(started_at: str) -> None:
     elapsed = max(0, int((datetime.now().astimezone() - datetime.fromisoformat(started_at)).total_seconds()))
     st.metric("Tiempo del cierre", f"{elapsed // 3600:02d}:{elapsed // 60 % 60:02d}:{elapsed % 60:02d}")
@@ -436,7 +467,7 @@ elif role == "Gerencia":
 else:
     tabs = st.tabs([
         "Panel de operación", "Ledger y Simulador PEPS", "Captura operativa", "Excepciones y Mermas",
-        "Cierre mensual", "Reportes Anexo 24", "Bitácora",
+        "Cierre mensual", "Reportes Anexo 24", "Bitácora", "🔮 Simulador de Impacto", "🔍 Clasificador Arancelario",
     ])
 
 if readonly:
@@ -802,6 +833,283 @@ else:
                 "valor_anterior": "Valor anterior", "valor_nuevo": "Valor nuevo",
             })
             st.dataframe(events, use_container_width=True, hide_index=True)
+
+    with tabs[7]:
+        st.subheader("Simulador de Impacto")
+        st.caption("Define un escenario hipotético y visualiza su efecto sobre la exposición, vencimientos y faltantes. Los cambios no se guardan.")
+
+        sim_materials = source["materials"]["material"].dropna().astype(str).tolist()
+        if "impact_exits" not in st.session_state:
+            st.session_state.impact_exits = []
+        if "impact_entries" not in st.session_state:
+            st.session_state.impact_entries = []
+
+        st.markdown("#### Parámetros generales")
+        hyp_col1, hyp_col2 = st.columns(2)
+        with hyp_col1:
+            hyp_fx = st.number_input("Tipo de cambio hipotético (MXN/USD)", value=exchange_rate, step=0.5, format="%.4f", key="hyp_fx")
+        with hyp_col2:
+            hyp_cutoff = st.date_input("Fecha de corte hipotética", value=cutoff, key="hyp_cutoff")
+
+        st.markdown("#### Salidas hipotéticas (retornos, exportaciones, cambios de régimen)")
+        with st.form("add_hyp_exit", clear_on_submit=True):
+            hx_col1, hx_col2, hx_col3 = st.columns([2, 1, 2])
+            hx_material = hx_col1.selectbox("Material", sim_materials, key="hx_mat")
+            hx_qty = hx_col2.number_input("Cantidad (kg)", min_value=0.001, step=10.0, key="hx_qty")
+            hx_tipo = hx_col3.selectbox("Tipo", ["Retorno", "Exportación", "Cambio de régimen", "Destrucción", "Transferencia"], key="hx_tipo")
+            if st.form_submit_button("➕ Agregar salida") and hx_qty > 0:
+                st.session_state.impact_exits.append({"material": hx_material, "cantidad_kg": hx_qty, "tipo": hx_tipo})
+                st.rerun()
+        if st.session_state.impact_exits:
+            st.dataframe(pd.DataFrame(st.session_state.impact_exits), use_container_width=True, hide_index=True)
+            if st.button("🗑 Limpiar salidas", key="clear_hyp_exits"):
+                st.session_state.impact_exits = []
+                st.rerun()
+
+        st.markdown("#### Entradas hipotéticas (nuevas importaciones)")
+        with st.form("add_hyp_entry", clear_on_submit=True):
+            he_col1, he_col2, he_col3 = st.columns([2, 1, 1])
+            he_material = he_col1.selectbox("Material", sim_materials, key="he_mat")
+            he_qty = he_col2.number_input("Cantidad (kg)", min_value=0.001, step=10.0, key="he_qty")
+            he_val = he_col3.number_input("Valor unit. (USD/kg)", min_value=0.0, step=0.01, format="%.4f", key="he_val")
+            if st.form_submit_button("➕ Agregar entrada") and he_qty > 0:
+                st.session_state.impact_entries.append({"material": he_material, "cantidad_kg": he_qty, "valor_unit_usd": he_val})
+                st.rerun()
+        if st.session_state.impact_entries:
+            st.dataframe(pd.DataFrame(st.session_state.impact_entries), use_container_width=True, hide_index=True)
+            if st.button("🗑 Limpiar entradas", key="clear_hyp_entries"):
+                st.session_state.impact_entries = []
+                st.rerun()
+
+        run_impact = st.button("⚡ Calcular impacto del escenario", type="primary")
+        if run_impact:
+            hyp_exits = base_exits.copy()
+            for i, ex in enumerate(st.session_state.impact_exits):
+                hyp_exits = pd.concat([hyp_exits, pd.DataFrame([{
+                    "pedimento": f"HIPOT-S{i+1:02d}", "clave": "HIP", "fecha": hyp_cutoff,
+                    "material": ex["material"], "tipo": ex["tipo"],
+                    "cantidad_kg": ex["cantidad_kg"], "observacion": "Escenario hipotético",
+                }])], ignore_index=True)
+            hyp_entries = source["entries"].copy()
+            for i, en in enumerate(st.session_state.impact_entries):
+                hyp_entries = pd.concat([hyp_entries, pd.DataFrame([{
+                    "pedimento": f"HIPOT-E{i+1:02d}", "clave": "HIP", "fecha_entrada": hyp_cutoff,
+                    "material": en["material"], "cantidad_kg": en["cantidad_kg"],
+                    "valor_unit_usd": en["valor_unit_usd"],
+                }])], ignore_index=True)
+            hyp_source = {**source, "entries": hyp_entries, "exits": hyp_exits, "baseline_oracles": False}
+            hyp_result = calculate_ledger(hyp_source, hyp_cutoff, hyp_fx, tolerance)
+            st.session_state.impact_result = hyp_result
+            st.session_state.impact_params = {"fx": hyp_fx, "cutoff": hyp_cutoff}
+            st.session_state.pop("impact_narrative", None)
+
+        if "impact_result" in st.session_state:
+            hyp_result = st.session_state.impact_result
+            hyp_metrics = hyp_result["metrics"]
+            delta_exposure = hyp_metrics["saldo_total_mxn"] - metrics["saldo_total_mxn"]
+            delta_risk = hyp_metrics["riesgo_alertas_mxn"] - metrics["riesgo_alertas_mxn"]
+
+            st.markdown("---")
+            st.markdown("#### Comparación: Actual vs. Escenario")
+            comp_cols = st.columns(4)
+            for col, label, base_val, hyp_val, fmt_fn in zip(
+                comp_cols,
+                ["Exposición total", "Riesgo en alertas", "Pedimentos en alerta", "Faltante"],
+                [metrics["saldo_total_mxn"], metrics["riesgo_alertas_mxn"], metrics["pedimentos_alerta"], metrics["faltante_total_kg"]],
+                [hyp_metrics["saldo_total_mxn"], hyp_metrics["riesgo_alertas_mxn"], hyp_metrics["pedimentos_alerta"], hyp_metrics["faltante_total_kg"]],
+                [money, money, str, fmt_kg],
+            ):
+                delta = hyp_val - base_val
+                col.metric(label, fmt_fn(hyp_val), delta=f"{'+' if delta >= 0 else ''}{fmt_fn(delta)}", delta_color="inverse")
+
+            comparison_df = pd.DataFrame({
+                "Métrica": ["Exposición total (MXN)", "Riesgo en alertas (MXN)", "Pedimentos en alerta", "Faltante (kg)"],
+                "Actual": [metrics["saldo_total_mxn"], metrics["riesgo_alertas_mxn"], float(metrics["pedimentos_alerta"]), metrics["faltante_total_kg"]],
+                "Escenario": [hyp_metrics["saldo_total_mxn"], hyp_metrics["riesgo_alertas_mxn"], float(hyp_metrics["pedimentos_alerta"]), hyp_metrics["faltante_total_kg"]],
+            })
+            fig_impact = px.bar(
+                comparison_df.melt(id_vars="Métrica", value_vars=["Actual", "Escenario"]),
+                x="Métrica", y="value", color="variable", barmode="group",
+                color_discrete_map={"Actual": "#8297a5", "Escenario": "#d89b61"},
+                labels={"value": "Valor", "variable": ""},
+                title="Impacto del escenario sobre las métricas clave",
+            )
+            fig_impact.update_layout(height=340)
+            st.plotly_chart(fig_impact, use_container_width=True)
+
+            st.markdown("#### Lotes con cambio de estatus")
+            hyp_ledger = hyp_result["ledger"]
+            merged_ledger = ledger[["pedimento", "material", "estatus", "saldo_kg", "riesgo_mxn"]].merge(
+                hyp_ledger[["pedimento", "material", "estatus", "saldo_kg", "riesgo_mxn"]],
+                on=["pedimento", "material"], suffixes=("_actual", "_escenario"), how="outer",
+            )
+            changed_lots = merged_ledger[merged_ledger["estatus_actual"] != merged_ledger["estatus_escenario"]].copy()
+            if not changed_lots.empty:
+                st.dataframe(changed_lots, use_container_width=True, hide_index=True)
+            else:
+                st.success("Ningún lote cambia de estatus con este escenario.")
+
+            st.markdown("#### Análisis narrativo")
+            if "impact_narrative" not in st.session_state:
+                if gemini_api_key():
+                    try:
+                        hyp_context = {
+                            "tipo_cambio_hipotetico": st.session_state.impact_params["fx"],
+                            "corte_hipotetico": str(st.session_state.impact_params["cutoff"]),
+                            "salidas_hipoteticas": st.session_state.impact_exits,
+                            "entradas_hipoteticas": st.session_state.impact_entries,
+                            "metricas_hipoteticas": {
+                                "saldo_total_mxn": round(hyp_metrics["saldo_total_mxn"], 2),
+                                "riesgo_alertas_mxn": round(hyp_metrics["riesgo_alertas_mxn"], 2),
+                                "pedimentos_alerta": hyp_metrics["pedimentos_alerta"],
+                                "faltante_total_kg": round(hyp_metrics["faltante_total_kg"], 2),
+                            },
+                        }
+                        prompt = (
+                            "Analiza este escenario hipotético de inventario IMMEX Anexo 24. "
+                            "Situación actual: " + json.dumps(app_context(), ensure_ascii=False, default=str) +
+                            "\nEscenario hipotético: " + json.dumps(hyp_context, ensure_ascii=False) +
+                            "\n\nExplica en 3-4 párrafos breves: 1) qué cambiaría en el inventario, "
+                            "2) el impacto financiero principal, 3) riesgos u oportunidades que abre este escenario, "
+                            "4) acción recomendada. No inventes normas ni valores que no estén en el contexto."
+                        )
+                        narrative = ask_gemini(prompt, system_instruction=(
+                            "Eres IA IMMEX, copiloto del Control Anexo 24. Responde en español, de forma amable y breve. "
+                            "Distingue hechos calculados de hipótesis. No des asesoría legal definitiva."
+                        ))
+                    except Exception:
+                        narrative = _local_impact_narrative(delta_exposure, delta_risk, hyp_metrics, metrics)
+                else:
+                    narrative = _local_impact_narrative(delta_exposure, delta_risk, hyp_metrics, metrics)
+                st.session_state.impact_narrative = narrative
+            st.markdown(st.session_state.impact_narrative)
+
+    with tabs[8]:
+        st.subheader("Clasificador Arancelario")
+        st.caption(
+            "Describe el producto o material y el asistente sugiere la fracción arancelaria TIGIE. "
+            "No sustituye una opinión aduanera formal ni tiene efectos legales."
+        )
+
+        if "tariff_history" not in st.session_state:
+            st.session_state.tariff_history = []
+
+        existing_fractions = (
+            source["materials"][["material", "descripcion", "fraccion"]]
+            .dropna(subset=["fraccion"])
+            .query("fraccion != ''")
+            .to_dict("records")
+        )
+
+        with st.form("tariff_classifier", clear_on_submit=False):
+            tc_description = st.text_area(
+                "Descripción del producto / material",
+                placeholder="Ej: Placa de acero inoxidable 304 laminada en frío, espesor 2 mm, para uso en manufactura de equipos médicos",
+                height=100,
+            )
+            tc_col1, tc_col2 = st.columns(2)
+            tc_origin = tc_col1.text_input("País de origen (opcional)", placeholder="México, China, EUA…")
+            tc_use = tc_col2.text_input("Uso o destino (opcional)", placeholder="Componente para ensamble, materia prima…")
+            tc_submit = st.form_submit_button("🔍 Clasificar", type="primary")
+
+        if tc_submit and tc_description.strip():
+            with st.spinner("Analizando clasificación arancelaria…"):
+                materials_context = "\n".join(
+                    f"- {row['material']}: {row['descripcion']} → fracción {row['fraccion']}"
+                    for row in existing_fractions
+                ) or "Sin materiales clasificados en el perfil actual."
+
+                if gemini_api_key():
+                    try:
+                        tariff_prompt = (
+                            f"Clasifica arancelariamente el siguiente producto según la TIGIE (Tarifa de los Impuestos "
+                            f"Generales de Exportación e Importación de México, vigente 2024-2025) y el Anexo 24 RGCE 2026.\n\n"
+                            f"PRODUCTO: {tc_description.strip()}\n"
+                            + (f"PAÍS DE ORIGEN: {tc_origin.strip()}\n" if tc_origin.strip() else "")
+                            + (f"USO / DESTINO: {tc_use.strip()}\n" if tc_use.strip() else "")
+                            + f"\nMATERIALES YA CLASIFICADOS EN ESTE PERFIL IMMEX (para referencia):\n{materials_context}\n\n"
+                            "Responde en este formato exacto:\n"
+                            "**Fracción sugerida:** [10 dígitos, ej: 7208.51.01]\n"
+                            "**Descripción TIGIE:** [descripción oficial de la partida/subpartida]\n"
+                            "**Arancel general (Ad Valorem):** [porcentaje o 'Exento']\n"
+                            "**TLCs con tasa preferencial:** [lista de tratados o 'Verificar en VUCEM']\n"
+                            "**Plazo legal IMMEX:** [meses según Anexo 24, típicamente 18 o 36]\n"
+                            "**Notas de clasificación:** [reglas de clasificación aplicables, notas de sección/capítulo relevantes]\n"
+                            "**Nivel de confianza:** [Alto / Medio / Bajo] — [razón breve]\n\n"
+                            "Si la clasificación es ambigua, menciona las fracciones alternativas y la razón. "
+                            "No afirmes certeza legal; distingue claramente la sugerencia del dictamen formal."
+                        )
+                        tariff_result = ask_gemini(tariff_prompt, system_instruction=(
+                            "Eres un experto en clasificación arancelaria mexicana (TIGIE, RGCE, Reglas de Clasificación). "
+                            "Responde en español. Sé preciso con los dígitos de la fracción. "
+                            "Distingue siempre entre sugerencia técnica y opinión aduanera formal."
+                        ))
+                        result_source = "Gemini"
+                    except Exception as err:
+                        tariff_result = None
+                        result_source = f"error: {err}"
+                else:
+                    tariff_result = None
+                    result_source = "local"
+
+                if tariff_result is None:
+                    desc_lower = tc_description.lower()
+                    matches = [
+                        row for row in existing_fractions
+                        if any(word in desc_lower for word in row["descripcion"].lower().split() if len(word) > 3)
+                    ]
+                    if matches:
+                        tariff_result = (
+                            "**Modo local (sin Gemini) — coincidencias en el perfil actual:**\n\n"
+                            + "\n".join(
+                                f"- **{row['material']}** ({row['descripcion']}): fracción `{row['fraccion']}`"
+                                for row in matches[:5]
+                            )
+                            + "\n\n_Activa Gemini para una clasificación completa basada en la TIGIE._"
+                        )
+                    else:
+                        tariff_result = (
+                            "**Modo local (sin Gemini).**\n\n"
+                            "No se encontraron materiales similares en el perfil. "
+                            "Configura `GEMINI_API_KEY` para obtener una clasificación TIGIE detallada."
+                        )
+
+                entry = {
+                    "descripcion": tc_description.strip(),
+                    "origen": tc_origin.strip() or "—",
+                    "uso": tc_use.strip() or "—",
+                    "resultado": tariff_result,
+                    "fuente": result_source,
+                }
+                st.session_state.tariff_history.insert(0, entry)
+
+        if st.session_state.tariff_history:
+            for i, item in enumerate(st.session_state.tariff_history):
+                with st.container(border=True):
+                    header_col, badge_col = st.columns([4, 1])
+                    header_col.markdown(f"**{item['descripcion'][:80]}{'…' if len(item['descripcion']) > 80 else ''}**")
+                    badge_col.caption(f"vía {item['fuente']}")
+                    if item["origen"] != "—" or item["uso"] != "—":
+                        st.caption(f"Origen: {item['origen']} · Uso: {item['uso']}")
+                    st.markdown(item["resultado"])
+                    if i == 0 and gemini_api_key() and existing_fractions:
+                        if st.button("📋 Copiar fracción al catálogo de materiales", key=f"copy_tariff_{i}"):
+                            st.info("Registra la fracción manualmente en el catálogo desde Captura operativa → Entrada / pedimento.")
+
+            if st.button("🗑 Limpiar historial de consultas", key="clear_tariff"):
+                st.session_state.tariff_history = []
+                st.rerun()
+
+        if not st.session_state.tariff_history:
+            st.info("Ingresa una descripción de producto para iniciar la clasificación.")
+            if existing_fractions:
+                with st.expander("Ver fracciones ya registradas en este perfil"):
+                    st.dataframe(
+                        pd.DataFrame(existing_fractions).rename(columns={
+                            "material": "Clave", "descripcion": "Descripción", "fraccion": "Fracción arancelaria"
+                        }),
+                        use_container_width=True, hide_index=True,
+                    )
 
 st.divider()
 st.caption(

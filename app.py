@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import tomllib
 from datetime import date, datetime
 from io import StringIO
@@ -17,10 +18,14 @@ from ledger import (
     load_csv_source_data, load_custom_xlsx_source_data, load_source_data,
 )
 from persistence import (
-    DB_PATH, add_audit_event, add_entry, add_exit, get_audit_events, get_captures,
+    add_audit_event, add_entry, add_exit, get_audit_events, get_captures,
     get_close_steps, get_setting, initialize_database, set_close_step, set_setting,
 )
 from normative import gemini_models, load_anexo_text, load_status, local_normative_answer, remember_model, status_notification
+from text_to_sql import (
+    build_interpretation_prompt, build_query_tables, build_source_schema,
+    build_text_to_sql_prompt, execute_read_only_query,
+)
 from ui_extras import kpi_cards, render_chatbot, render_header, summary_card
 
 st.set_page_config(page_title="IMMEX | Control Anexo 24", page_icon="📦", layout="wide")
@@ -253,6 +258,10 @@ except Exception as error:
     st.error(f"No se pudo leer el origen seleccionado: {error}")
     st.stop()
 profile_name = source.get("profile_name", profile_name)
+assistant_source = {
+    name: source[name].copy()
+    for name in ("entries", "exits", "materials", "production", "bom")
+}
 
 params = source["params"]
 company = str(params.get("Razón social", Path(profile_name).stem))
@@ -430,13 +439,13 @@ if show_daily_summary:
 render_chatbot(answer_question)
 
 if readonly:
-    tabs = st.tabs(["Exposición", "Ledger", "Reporte por fracción", "Bitácora"])
+    tabs = st.tabs(["Exposición", "Ledger", "Reporte por fracción", "Bitácora", "Asistente de Consultas"])
 elif role == "Gerencia":
-    tabs = st.tabs(["Dashboard BI", "Riesgo y vencimientos", "Reportes", "Bitácora"])
+    tabs = st.tabs(["Dashboard BI", "Riesgo y vencimientos", "Reportes", "Bitácora", "Asistente de Consultas"])
 else:
     tabs = st.tabs([
         "Panel de operación", "Ledger y Simulador PEPS", "Captura operativa", "Excepciones y Mermas",
-        "Cierre mensual", "Reportes Anexo 24", "Bitácora",
+        "Cierre mensual", "Reportes Anexo 24", "Bitácora", "Asistente de Consultas",
     ])
 
 if readonly:
@@ -802,6 +811,80 @@ else:
                 "valor_anterior": "Valor anterior", "valor_nuevo": "Valor nuevo",
             })
             st.dataframe(events, use_container_width=True, hide_index=True)
+
+with tabs[-1]:
+    st.subheader("Asistente de Consultas")
+    st.caption(
+        f"Consulta los datos del archivo seleccionado: {profile_name}. Los saldos y vencimientos se recalculan "
+        "con el ledger antes de responder."
+    )
+    search_question = st.text_input(
+        "¿Qué información necesitas consultar?",
+        placeholder="Ej.: ¿Cuáles son las entradas por material de este trimestre?",
+        key="text_to_sql_question",
+    )
+    if st.button("Buscar", type="primary", disabled=not search_question.strip(), key="text_to_sql_run"):
+        st.session_state.pop("text_to_sql_results", None)
+        st.session_state.pop("text_to_sql_truncated", None)
+        st.session_state.pop("text_to_sql_answer", None)
+        st.session_state.pop("text_to_sql_error", None)
+        st.session_state.pop("text_to_sql_profile", None)
+        if not gemini_api_key():
+            st.session_state.text_to_sql_error = "El asistente no está disponible por el momento. Intenta nuevamente más tarde."
+        else:
+            try:
+                assistant_result = calculate_ledger(assistant_source, cutoff, exchange_rate, tolerance)
+                query_tables = build_query_tables(assistant_source, assistant_result)
+                generated_sql = ask_gemini(
+                    build_text_to_sql_prompt(search_question.strip(), build_source_schema(query_tables)),
+                    system_instruction=(
+                        "Eres un generador de consultas SQLite de solo lectura. Sigue estrictamente el esquema "
+                        "y las reglas del mensaje. Devuelve solo SQL, nunca ejecutes acciones ni inventes columnas."
+                    ),
+                )
+                search_results, truncated = execute_read_only_query(generated_sql, query_tables)
+            except (RuntimeError, ValueError, sqlite3.Error, pd.errors.DatabaseError):
+                st.session_state.text_to_sql_error = (
+                    "No pude completar la consulta con esa pregunta. Reformúlala con otros términos e inténtalo nuevamente."
+                )
+            else:
+                if search_results.empty:
+                    st.session_state.text_to_sql_error = (
+                        "No encontré resultados para esa pregunta. Prueba reformularla o ampliar los criterios."
+                    )
+                else:
+                    st.session_state.text_to_sql_results = search_results
+                    st.session_state.text_to_sql_truncated = truncated
+                    st.session_state.text_to_sql_profile = profile_name
+                    try:
+                        st.session_state.text_to_sql_answer = ask_gemini(
+                            build_interpretation_prompt(
+                                search_question.strip(),
+                                search_results.to_csv(index=False),
+                                truncated,
+                            ),
+                            system_instruction=(
+                                "Eres un analista de aduanas IMMEX. Explica los resultados con claridad y precisión, "
+                                "sin mostrar SQL ni afirmar hechos que no aparezcan en los datos."
+                            ),
+                        )
+                    except RuntimeError:
+                        st.session_state.text_to_sql_error = (
+                            "La consulta se realizó, pero no pude redactar el resumen ahora. "
+                            "Puedes revisar los datos obtenidos a continuación."
+                        )
+
+    search_results = st.session_state.get("text_to_sql_results")
+    if isinstance(search_results, pd.DataFrame) and st.session_state.get("text_to_sql_profile") == profile_name:
+        answer = st.session_state.get("text_to_sql_answer")
+        if answer:
+            st.markdown(answer)
+        st.dataframe(search_results, use_container_width=True, hide_index=True)
+        if st.session_state.get("text_to_sql_truncated", False):
+            st.caption(f"Se muestran las primeras {len(search_results)} filas.")
+    error_message = st.session_state.get("text_to_sql_error")
+    if error_message:
+        st.info(error_message)
 
 st.divider()
 st.caption(

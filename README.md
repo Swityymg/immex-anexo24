@@ -23,6 +23,8 @@ El documento base incluido es el **Anexo 24 de RGCE 2026 publicado el 15/01/2026
 
 La UI muestra una campana ordenada por prioridad, cuatro tarjetas KPI blancas con borde uniforme, el resumen del día cerrado por defecto en un toggle y el chatbot IA IMMEX 🤖 flotante en la esquina inferior derecha. Gerencia y Operación tienen dashboards distintos: Gerencia ve agregados BI y decisiones; Operación conserva captura, ledger, simulador PEPS, excepciones y cierre.
 
+La pestaña **Asistente de Consultas** permite preguntar en lenguaje natural sobre el libro Anexo 24 seleccionado usando Gemini. Ejecuta consultas de solo lectura sobre copias temporales de sus capturas y de los saldos, vencimientos, consumos, faltantes y mermas recalculados por `ledger.py`; muestra un resumen ejecutivo junto con la tabla de respaldo (máximo 500 filas). No modifica el Excel ni SQLite.
+
 ## Criterios del MVP
 
 - El corte inicial, tipo de cambio y tolerancia se cargan desde `Parametros` y se pueden simular en la barra lateral.

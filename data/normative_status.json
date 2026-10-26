@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-10-25T10:57:34-06:00",
+  "checked_at": "2026-10-26T13:01:02-06:00",
   "days_scanned": 3,
   "days_ok": 0,
   "errors": [
+    "26/10: SSLError: HTTPSConnectionPool(host='www.dof.gob.mx', port=443): Max retries exceeded with url: /index.php?year=2026&month=10&day=26 (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIF",
     "25/10: SSLError: HTTPSConnectionPool(host='www.dof.gob.mx', port=443): Max retries exceeded with url: /index.php?year=2026&month=10&day=25 (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIF",
-    "24/10: SSLError: HTTPSConnectionPool(host='www.dof.gob.mx', port=443): Max retries exceeded with url: /index.php?year=2026&month=10&day=24 (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIF",
-    "23/10: SSLError: HTTPSConnectionPool(host='www.dof.gob.mx', port=443): Max retries exceeded with url: /index.php?year=2026&month=10&day=23 (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIF"
+    "24/10: SSLError: HTTPSConnectionPool(host='www.dof.gob.mx', port=443): Max retries exceeded with url: /index.php?year=2026&month=10&day=24 (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIF"
   ],
   "items": []
 }
